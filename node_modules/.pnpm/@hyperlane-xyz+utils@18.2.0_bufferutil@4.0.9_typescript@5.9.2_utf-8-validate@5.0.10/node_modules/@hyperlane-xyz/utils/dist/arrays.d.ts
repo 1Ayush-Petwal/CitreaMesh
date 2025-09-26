@@ -1,0 +1,10 @@
+interface Sliceable {
+    length: number;
+    slice: (i: number, j: number) => any;
+}
+export declare function chunk<T extends Sliceable>(str: T, size: number): T[];
+export declare function exclude<T>(item: T, list: T[]): T[];
+export declare function randomElement<T>(list: T[]): T;
+export declare function sortArrayByKey<T extends Record<keyof T, any>>(array: T[], sortKey: keyof T): T[];
+export {};
+//# sourceMappingURL=arrays.d.ts.map
