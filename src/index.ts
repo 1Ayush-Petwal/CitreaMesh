@@ -1,21 +1,38 @@
+import { GithubRegistry } from "@hyperlane-xyz/registry";
+import {
+  ChainMap,
+  ChainMetadata,
+  MultiProtocolProvider,
+  MultiProvider,
+  TokenType,
+  WarpCore,
+  WarpCoreConfig,
+  WarpRouteDeployConfig,
+} from "@hyperlane-xyz/sdk";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+
+import { transferToken } from "./tokenTransfer.js";
+
 import { config } from "dotenv";
-import path from "node:path";
-import fs from "node:fs";
-import { privateKeyToSigner } from "./utils.js";
 import { ethers } from "ethers";
-import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
+
 import { z } from "zod";
+
 import cacheToken from "./utils/cacheTokens.js";
 import { CitreaFaucet } from "./faucet.js";
-dotenv.config();
-
+// new citrea imports
+// import erc20Token from '../out/erc20Token.sol/erc20Token.json';
 import { createRequire } from "module";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { transferToken } from "./tokenTransfer.js";
 const require = createRequire(import.meta.url);
 const erc20Token = require("../out/erc20Token.sol/erc20Token.json");
 
+// Load environment variables from .env file
+config();
+
+// Create server instance
 const server = new McpServer(
   {
     name: "citrea-mcp",
@@ -27,6 +44,14 @@ const server = new McpServer(
   },
   {
     capabilities: {
+      // logging: {
+      //   jsonrpc: '2.0',
+      //   id: 1,
+      //   method: 'logging/setLevel',
+      //   params: {
+      //     level: 'info',
+      //   },
+      // },
       resources: {
         subscribe: true,
       },
@@ -36,6 +61,8 @@ const server = new McpServer(
 
 const CITREA_RPC = "https://rpc.testnet.citrea.xyz";
 const EXPLORER_BASE = "https://explorer.testnet.citrea.xyz";
+
+// Create directory for hyperlane-mcp if it doesn't exist
 const homeDir = process.env.CACHE_DIR || process.env.HOME;
 let mcpDir;
 if (homeDir) {
@@ -49,17 +76,19 @@ if (homeDir) {
   );
 }
 
+// init key
 const key = process.env.PRIVATE_KEY;
 if (!key) {
   throw new Error("No private key provided");
 }
-const signer = privateKeyToSigner(key);
 
+// Initialize Citrea Faucet
 const citreaFaucet = new CitreaFaucet(key, CITREA_RPC, mcpDir, {
   maxClaimsPerDay: 5,
   maxAmountPerClaim: "0.0001",
   windowHours: 24,
 });
+
 server.tool(
   "get_citrea_balance",
   "Get the native  balance of an address on Citrea",
@@ -152,56 +181,6 @@ server.tool(
         },
       ],
     };
-  }
-);
-
-server.tool(
-  "transfer-token",
-  "Transfer a deployed ERC20 token (from deployed-tokens.json) on Citrea",
-  {
-    symbol: z.string().describe("Token symbol, e.g. 'mCTR'"),
-    recipient: z
-      .string()
-      .length(42)
-      .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid EVM address")
-      .describe("Recipient address"),
-    amount: z.string().describe("Amount to transfer (human-readable units)"),
-  },
-  async ({ symbol, recipient, amount }) => {
-    try {
-      const result = await transferToken(
-        mcpDir,
-        symbol,
-        recipient,
-        amount,
-        process.env.PRIVATE_KEY!,
-        CITREA_RPC,
-        EXPLORER_BASE
-      );
-
-      return {
-        content: [
-          {
-            type: "text",
-            text:
-              `✅ Transferred ${amount} ${result.symbol} to ${result.recipient}\n` +
-              `🔗 Tx: ${result.explorer.transaction}\n` +
-              `📜 Contract: ${result.explorer.contract}`,
-          },
-        ],
-      };
-    } catch (err) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `❌ Error transferring token: ${
-              err instanceof Error ? err.message : String(err)
-            }`,
-          },
-        ],
-      };
-    }
   }
 );
 
@@ -421,6 +400,56 @@ server.tool(
             type: "text",
             text: `❌ Error getting faucet history: ${
               error instanceof Error ? error.message : String(error)
+            }`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+server.tool(
+  "transfer-token",
+  "Transfer a deployed ERC20 token (from deployed-tokens.json) on Citrea",
+  {
+    symbol: z.string().describe("Token symbol, e.g. 'mCTR'"),
+    recipient: z
+      .string()
+      .length(42)
+      .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid EVM address")
+      .describe("Recipient address"),
+    amount: z.string().describe("Amount to transfer (human-readable units)"),
+  },
+  async ({ symbol, recipient, amount }) => {
+    try {
+      const result = await transferToken(
+        mcpDir,
+        symbol,
+        recipient,
+        amount,
+        process.env.PRIVATE_KEY!,
+        CITREA_RPC,
+        EXPLORER_BASE
+      );
+
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              `✅ Transferred ${amount} ${result.symbol} to ${result.recipient}\n` +
+              `🔗 Tx: ${result.explorer.transaction}\n` +
+              `📜 Contract: ${result.explorer.contract}`,
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Error transferring token: ${
+              err instanceof Error ? err.message : String(err)
             }`,
           },
         ],
