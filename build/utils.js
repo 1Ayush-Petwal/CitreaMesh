@@ -34,6 +34,10 @@ export async function requestAndSaveApiKeys(chains, chainMetadata, registry) {
             continue;
         }
         chainMetadata[chain].blockExplorers[0].apiKey = apiKeys[chain];
+        // await registry.updateChain({
+        //     chainName: chain,
+        //     metadata: chainMetadata[chain],
+        // });
     }
     return apiKeys;
 }
@@ -81,6 +85,7 @@ export async function nativeBalancesAreSufficient(multiProvider, chains, minGas)
     }
     const allSufficient = sufficientBalances.every((sufficient) => sufficient);
     if (allSufficient) {
+        //   logGreen('✅ Balances are sufficient');
         return true;
     }
     else {
@@ -116,6 +121,9 @@ export async function getStartBlocks(chainAddresses, core, chainMetadata) {
             return deployedBlock.toNumber();
         }
         catch {
+            // console.log(
+            //   `❌ Failed to get deployed block to set an index for ${chain}, this is potentially an issue with rpc provider or a misconfiguration`
+            // );
             return undefined;
         }
     }));
@@ -134,7 +142,11 @@ export function validateAgentConfig(agentConfig) {
         const errorMessage = result.error.toString();
         console.warn(`\nAgent config is invalid, this is possibly due to required contracts not being deployed. See details below:\n${errorMessage}`);
     }
+    // else {
+    // console.log('✅ Agent config successfully created');
+    // }
 }
+// Utility to create directories if they don't exist
 export const createDirectory = (directoryPath) => {
     if (!fs.existsSync(directoryPath)) {
         fs.mkdirSync(directoryPath, { recursive: true });

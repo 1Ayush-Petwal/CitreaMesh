@@ -6,7 +6,6 @@ import { ethers } from "ethers";
 import fs from "fs";
 import path from "path";
 import { z } from "zod";
-import { privateKeyToSigner } from "./utils.js";
 import cacheToken from "./utils/cacheTokens.js";
 import { CitreaFaucet } from "./faucet.js";
 // new citrea imports
@@ -58,7 +57,6 @@ const key = process.env.PRIVATE_KEY;
 if (!key) {
     throw new Error("No private key provided");
 }
-const signer = privateKeyToSigner(key);
 // Initialize Citrea Faucet
 const citreaFaucet = new CitreaFaucet(key, CITREA_RPC, mcpDir, {
     maxClaimsPerDay: 5,

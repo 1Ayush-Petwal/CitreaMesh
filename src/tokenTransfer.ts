@@ -1,10 +1,10 @@
-import { ethers } from 'ethers';
-import fs from 'fs';
-import path from 'path';
+import { ethers } from "ethers";
+import fs from "fs";
+import path from "path";
 
 const ERC20_ABI = [
-  'function transfer(address to, uint256 amount) public returns (bool)',
-  'function decimals() view returns (uint8)',
+  "function transfer(address to, uint256 amount) public returns (bool)",
+  "function decimals() view returns (uint8)",
 ];
 
 export async function transferToken(
@@ -16,11 +16,11 @@ export async function transferToken(
   rpcUrl: string,
   explorerBase: string
 ) {
-  const tokensFile = path.join(mcpDir, 'deployed-tokens.json');
+  const tokensFile = path.join(mcpDir, "deployed-tokens.json");
   if (!fs.existsSync(tokensFile)) {
-    throw new Error('No deployed-tokens.json file found.');
+    throw new Error("No deployed-tokens.json file found.");
   }
-  const tokens = JSON.parse(fs.readFileSync(tokensFile, 'utf-8'));
+  const tokens = JSON.parse(fs.readFileSync(tokensFile, "utf-8"));
   const token = tokens.find((t: any) => t.symbol === symbol);
   if (!token) {
     throw new Error(`Token with symbol ${symbol} not found.`);

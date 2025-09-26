@@ -1,14 +1,3 @@
-import { GithubRegistry } from "@hyperlane-xyz/registry";
-import {
-  ChainMap,
-  ChainMetadata,
-  MultiProtocolProvider,
-  MultiProvider,
-  TokenType,
-  WarpCore,
-  WarpCoreConfig,
-  WarpRouteDeployConfig,
-} from "@hyperlane-xyz/sdk";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
