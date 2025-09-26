@@ -12,6 +12,7 @@ dotenv.config();
 
 import { createRequire } from "module";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { transferToken } from "./tokenTransfer.js";
 const require = createRequire(import.meta.url);
 const erc20Token = require("../out/erc20Token.sol/erc20Token.json");
 
@@ -151,6 +152,56 @@ server.tool(
         },
       ],
     };
+  }
+);
+
+server.tool(
+  "transfer-token",
+  "Transfer a deployed ERC20 token (from deployed-tokens.json) on Citrea",
+  {
+    symbol: z.string().describe("Token symbol, e.g. 'mCTR'"),
+    recipient: z
+      .string()
+      .length(42)
+      .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid EVM address")
+      .describe("Recipient address"),
+    amount: z.string().describe("Amount to transfer (human-readable units)"),
+  },
+  async ({ symbol, recipient, amount }) => {
+    try {
+      const result = await transferToken(
+        mcpDir,
+        symbol,
+        recipient,
+        amount,
+        process.env.PRIVATE_KEY!,
+        CITREA_RPC,
+        EXPLORER_BASE
+      );
+
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              `✅ Transferred ${amount} ${result.symbol} to ${result.recipient}\n` +
+              `🔗 Tx: ${result.explorer.transaction}\n` +
+              `📜 Contract: ${result.explorer.contract}`,
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Error transferring token: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          },
+        ],
+      };
+    }
   }
 );
 
