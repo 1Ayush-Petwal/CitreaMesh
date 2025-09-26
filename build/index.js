@@ -25,8 +25,8 @@ const server = new McpServer({
         },
     },
 });
-const CITREA_RPC = process.env.CITREA_RPC;
-const EXPLORER_BASE = process.env.EXPLORER_BASE;
+const CITREA_RPC = "https://rpc.testnet.citrea.xyz";
+const EXPLORER_BASE = "https://explorer.testnet.citrea.xyz";
 const homeDir = process.env.CACHE_DIR || process.env.HOME;
 let mcpDir;
 if (homeDir) {
