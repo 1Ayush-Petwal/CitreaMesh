@@ -11,6 +11,7 @@ import cacheToken from "./utils/cacheTokens.js";
 dotenv.config();
 
 import { createRequire } from "module";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 const require = createRequire(import.meta.url);
 const erc20Token = require("../out/erc20Token.sol/erc20Token.json");
 
@@ -148,3 +149,14 @@ server.tool(
     };
   }
 );
+
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error("Citrea MCP server started. Listening for requests...");
+}
+
+main().catch((error) => {
+  console.error("Fatal error in main():", error);
+  process.exit(1);
+});
