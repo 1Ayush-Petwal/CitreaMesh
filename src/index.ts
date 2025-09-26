@@ -7,7 +7,7 @@ import { ethers } from "ethers";
 import dotenv from "dotenv";
 import { z } from "zod";
 import cacheToken from "./utils/cacheTokens.js";
-
+import { CitreaFaucet } from "./faucet.js";
 dotenv.config();
 
 import { createRequire } from "module";
@@ -54,6 +54,11 @@ if (!key) {
 }
 const signer = privateKeyToSigner(key);
 
+const citreaFaucet = new CitreaFaucet(key, CITREA_RPC, mcpDir, {
+  maxClaimsPerDay: 5,
+  maxAmountPerClaim: "0.0001",
+  windowHours: 24,
+});
 server.tool(
   "get_citrea_balance",
   "Get the native  balance of an address on Citrea",
@@ -146,6 +151,230 @@ server.tool(
         },
       ],
     };
+  }
+);
+
+server.tool(
+  "claim-citrea-faucet",
+  "Claim cBTC from the Citrea faucet. Users can claim 0.0001 cBTC up to 5 times per 24 hours.",
+  {
+    address: z
+      .string()
+      .length(42)
+      .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid EVM address")
+      .describe("Recipient Citrea address to receive cBTC"),
+  },
+  async ({ address }) => {
+    try {
+      const result = await citreaFaucet.claimFaucet(address);
+
+      if (result.success) {
+        return {
+          content: [
+            {
+              type: "text",
+              text:
+                `✅ Faucet claim successful!\n\n` +
+                `💰 Amount: ${result.amount} cBTC\n` +
+                `📍 Recipient: ${address}\n` +
+                `🔗 Transaction: ${EXPLORER_BASE}/tx/${result.txHash}\n` +
+                `💳 Remaining faucet balance: ${result.balance} cBTC`,
+            },
+          ],
+        };
+      } else {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `❌ Faucet claim failed: ${result.error}`,
+            },
+          ],
+        };
+      }
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Error claiming from faucet: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+server.tool(
+  "check-faucet-eligibility",
+  "Check if an address is eligible to claim from the Citrea faucet and see remaining claims.",
+  {
+    address: z
+      .string()
+      .length(42)
+      .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid EVM address")
+      .describe("Address to check eligibility for"),
+  },
+  async ({ address }) => {
+    try {
+      const eligibility = await citreaFaucet.checkEligibility(address);
+
+      if (eligibility.eligible) {
+        return {
+          content: [
+            {
+              type: "text",
+              text:
+                `✅ Address ${address} is eligible for faucet claims!\n\n` +
+                `🎯 Remaining claims: ${eligibility.remainingClaims}/5 in the next 24 hours\n` +
+                `💰 Amount per claim: 0.0001 cBTC`,
+            },
+          ],
+        };
+      } else {
+        let message =
+          `❌ Address ${address} is not eligible for faucet claims.\n\n` +
+          `📋 Reason: ${eligibility.reason}`;
+
+        if (eligibility.nextClaimTime) {
+          const nextClaim = new Date(eligibility.nextClaimTime);
+          message += `\n⏰ Next claim available: ${nextClaim.toLocaleString()}`;
+        }
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: message,
+            },
+          ],
+        };
+      }
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Error checking eligibility: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+server.tool(
+  "get-faucet-stats",
+  "Get statistics about the Citrea faucet including total claims, distributed amount, and current balance.",
+  {},
+  async () => {
+    try {
+      const stats = await citreaFaucet.getFaucetStats();
+
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              `📊 Citrea Faucet Statistics\n\n` +
+              `💰 Current faucet balance: ${stats.faucetBalance} cBTC\n` +
+              `📈 Total claims made: ${stats.totalClaims}\n` +
+              `💸 Total distributed: ${stats.totalDistributed} cBTC\n` +
+              `👥 Unique addresses served: ${stats.uniqueAddresses}\n\n` +
+              `⚙️ Faucet Limits:\n` +
+              `   • Max claims per user: ${stats.limits.maxClaimsPerDay} per ${stats.limits.windowHours} hours\n` +
+              `   • Amount per claim: ${stats.limits.maxAmountPerClaim} cBTC`,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Error getting faucet stats: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+server.tool(
+  "get-faucet-history",
+  "Get claim history for a specific address or all faucet claims.",
+  {
+    address: z
+      .string()
+      .length(42)
+      .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid EVM address")
+      .optional()
+      .describe(
+        "Address to get claim history for (optional - if not provided, returns all claims)"
+      ),
+  },
+  async ({ address }) => {
+    try {
+      const history = await citreaFaucet.getClaimHistory(address);
+
+      if (history.length === 0) {
+        const message = address
+          ? `No faucet claims found for address ${address}`
+          : "No faucet claims have been made yet";
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: message,
+            },
+          ],
+        };
+      }
+
+      const title = address
+        ? `📋 Faucet claim history for ${address}`
+        : `📋 All faucet claims (${history.length} total)`;
+
+      const historyText = history
+        .sort((a, b) => b.timestamp - a.timestamp) // Most recent first
+        .map((claim, index) => {
+          const date = new Date(claim.timestamp).toLocaleString();
+          return (
+            `${index + 1}. ${claim.address}\n` +
+            `   💰 Amount: ${claim.amount} cBTC\n` +
+            `   📅 Date: ${date}\n` +
+            `   🔗 Tx: ${EXPLORER_BASE}/tx/${claim.txHash}`
+          );
+        })
+        .join("\n\n");
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `${title}\n\n${historyText}`,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Error getting faucet history: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          },
+        ],
+      };
+    }
   }
 );
 
