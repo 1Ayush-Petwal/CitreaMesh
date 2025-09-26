@@ -12,6 +12,8 @@ import { z } from "zod";
 
 import cacheToken from "./utils/cacheTokens.js";
 import { CitreaFaucet } from "./faucet.js";
+import { CitreaExplorerSummary } from './explorerSummary.js';
+
 // new citrea imports
 // import erc20Token from '../out/erc20Token.sol/erc20Token.json';
 import { createRequire } from "module";
@@ -77,6 +79,9 @@ const citreaFaucet = new CitreaFaucet(key, CITREA_RPC, mcpDir, {
   maxAmountPerClaim: "0.0001",
   windowHours: 24,
 });
+
+// Initialize Citrea Explorer Summary
+const explorerSummary = new CitreaExplorerSummary(CITREA_RPC, EXPLORER_BASE);
 
 server.tool(
   "get_citrea_balance",
@@ -396,6 +401,202 @@ server.tool(
     }
   }
 );
+
+//explorer
+server.tool(
+  'get-citrea-explorer-url',
+  'Generate Citrea explorer URLs for addresses, transactions, or blocks.',
+  {
+    type: z.enum(['address', 'transaction', 'block']).describe('Type of explorer URL to generate'),
+    value: z.string().describe('Address (0x...), transaction hash (0x...), or block number'),
+  },
+  async ({ type, value }) => {
+    try {
+      let url: string;
+      let description: string;
+      
+      switch (type) {
+        case 'address':
+          if (!/^0x[a-fA-F0-9]{40}$/.test(value)) {
+            throw new Error('Invalid address format');
+          }
+          url = explorerSummary.getAddressUrl(value);
+          description = `Address details for ${value}`;
+          break;
+          
+        case 'transaction':
+          if (!/^0x[a-fA-F0-9]{64}$/.test(value)) {
+            throw new Error('Invalid transaction hash format');
+          }
+          url = explorerSummary.getTransactionUrl(value);
+          description = `Transaction details for ${value}`;
+          break;
+          
+        case 'block':
+          const blockNum = parseInt(value);
+          if (isNaN(blockNum) || blockNum < 0) {
+            throw new Error('Invalid block number');
+          }
+          url = explorerSummary.getBlockUrl(blockNum);
+          description = `Block details for block ${blockNum}`;
+          break;
+          
+        default:
+          throw new Error('Invalid type. Must be address, transaction, or block');
+      }
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `🔗 **${description}**\n\n` +
+                 `Explorer URL: ${url}\n\n` +
+                 `This link will show detailed information about the ${type} on the Citrea testnet explorer, ` +
+                 `including transaction history, balance, and other relevant blockchain data.`,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Error generating explorer URL: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+server.tool(
+  'get-wallet-explorer-summary',
+  'Get comprehensive wallet analysis including recent transactions, gas usage statistics, and explorer details. This tool provides RPC-grounded data suitable for LLM analysis.',
+  {
+    address: z
+      .string()
+      .length(42)
+      .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid EVM address')
+      .describe('Wallet address to analyze'),
+    limit: z
+      .number()
+      .min(1)
+      .max(50)
+      .default(10)
+      .describe('Maximum number of recent transactions to include (1-50, default: 10)'),
+  },
+  async ({ address, limit }) => {
+    try {
+      const summary = await explorerSummary.getWalletSummary(address, limit);
+      
+      // Format the response for LLM consumption
+      let response = `📊 **Wallet Analysis for ${address}**\n\n`;
+      
+      // Basic wallet info
+      response += `💰 **Current Balance:** ${summary.balance} cBTC\n`;
+      response += `📈 **Total Transactions:** ${summary.transactionCount}\n`;
+      response += `🔗 **Explorer:** ${explorerSummary.getAddressUrl(address)}\n\n`;
+      
+      // Gas statistics
+      if (summary.recentTransactions.length > 0) {
+        response += `⛽ **Gas Statistics (Last ${summary.recentTransactions.length} transactions):**\n`;
+        response += `   • Total Gas Used: ${summary.totalGasUsed}\n`;
+        response += `   • Average Gas Price: ${summary.averageGasPrice} gwei\n`;
+        response += `   • Total Gas Cost: ${summary.totalGasCost} cBTC\n\n`;
+        
+        // Recent transactions
+        response += `📋 **Recent Transactions:**\n`;
+        summary.recentTransactions.forEach((tx, index) => {
+          response += `\n**${index + 1}. Transaction ${tx.hash.substring(0, 10)}...**\n`;
+          response += `   • Block: ${tx.blockNumber} (${tx.confirmations} confirmations)\n`;
+          response += `   • Status: ${tx.status === 'success' ? '✅' : '❌'} ${tx.status}\n`;
+          response += `   • Value: ${tx.value} cBTC\n`;
+          response += `   • From: ${tx.from}\n`;
+          response += `   • To: ${tx.to || 'Contract Creation'}\n`;
+          response += `   • Gas Used: ${tx.gasUsed} (${tx.gasPrice} gwei)\n`;
+          response += `   • Gas Cost: ${tx.gasCost} cBTC\n`;
+          response += `   • Explorer: ${tx.explorerUrl}\n`;
+        });
+      } else {
+        response += `📋 **Recent Transactions:** No transactions found in the last ${summary.blockRange.scanned} blocks\n`;
+      }
+      
+      // Block scan info
+      response += `\n🔍 **Scan Information:**\n`;
+      response += `   • Blocks scanned: ${summary.blockRange.scanned} (${summary.blockRange.from} to ${summary.blockRange.to})\n`;
+      response += `   • This analysis is based on RPC data from Citrea testnet\n`;
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: response,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Error getting wallet explorer summary: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+server.tool(
+  'get-transaction-details',
+  'Get detailed information about a specific Citrea transaction including gas usage and explorer link.',
+  {
+    txHash: z
+      .string()
+      .length(66)
+      .regex(/^0x[a-fA-F0-9]{64}$/, 'Invalid transaction hash')
+      .describe('Transaction hash to analyze'),
+  },
+  async ({ txHash }) => {
+    try {
+      const txDetails = await explorerSummary.getTransactionDetails(txHash);
+      
+      let response = `🔍 **Transaction Details for ${txHash}**\n\n`;
+      
+      response += `✅ **Status:** ${txDetails.status === 'success' ? '✅ Success' : '❌ Failed'}\n`;
+      response += `📦 **Block:** ${txDetails.blockNumber} (${txDetails.confirmations} confirmations)\n`;
+      response += `💰 **Value:** ${txDetails.value} cBTC\n`;
+      response += `📤 **From:** ${txDetails.from}\n`;
+      response += `📥 **To:** ${txDetails.to || 'Contract Creation'}\n\n`;
+      
+      response += `⛽ **Gas Information:**\n`;
+      response += `   • Gas Used: ${txDetails.gasUsed}\n`;
+      response += `   • Gas Price: ${txDetails.gasPrice} gwei\n`;
+      response += `   • Gas Cost: ${txDetails.gasCost} cBTC\n\n`;
+      
+      response += `🔗 **Explorer:** ${txDetails.explorerUrl}\n`;
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: response,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ Error getting transaction details: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
+      };
+    }
+  }
+);
+
 
 server.tool(
   "transfer-token",
