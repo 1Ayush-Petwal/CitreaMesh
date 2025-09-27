@@ -1,0 +1,252 @@
+[
+  {
+    "symbol": "USDC",
+    "name": "USD Coin",
+    "address": "0xb669dC8cC6D044307Ba45366C0c836eC3c7e31AA"
+  },
+  {
+    "symbol": "UNI-V2",
+    "name": "Uniswap V2",
+    "address": "0x2252998B8281ba168Ab11b620b562035dC34EAE0"
+  },
+  {
+    "symbol": "WCBTC",
+    "name": "Wrapped Citrea Bitcoin",
+    "address": "0x8d0c9d1c17aE5e40ffF9bE350f57840E9E66Cd93"
+  },
+  {
+    "symbol": "SUSD",
+    "name": "Signals USD",
+    "address": "0xE32527F8b3f142a69278f22CdA334d70644b9743"
+  },
+  {
+    "symbol": "SUMA",
+    "name": "SUMA",
+    "address": "0xdE4251dd68e1aD5865b14Dd527E54018767Af58a"
+  },
+  {
+    "symbol": "USDC",
+    "name": "USDC",
+    "address": "0x36c16eaC6B0Ba6c50f494914ff015fCa95B7835F"
+  },
+  {
+    "symbol": "NUSD",
+    "name": "Nectra USD",
+    "address": "0x9B28B690550522608890C3C7e63c0b4A7eBab9AA"
+  },
+  {
+    "symbol": "USD",
+    "name": "USD",
+    "address": "0x9FEE47Bf6A2Bf54A9cE38caFF94bb50adCa4710e"
+  },
+  {
+    "symbol": "USDC",
+    "name": "USDC",
+    "address": "0x2C8abD2A528D19AFc33d2ebA507c0F405c131335"
+  },
+  {
+    "symbol": "WETH",
+    "name": "Wrapped Ether",
+    "address": "0x4126E0f88008610d6E6C3059d93e9814c20139cB"
+  },
+  {
+    "symbol": "Unnamed",
+    "name": "Unnamed token",
+    "address": "0x22625aDDDcD0e6D981312f6c6E2DBb0003863A90"
+  },
+  {
+    "symbol": "s33",
+    "name": "Satsuma Liquid Staking Token",
+    "address": "0xb93B80d59c2FB3eb23817d4A27841eF8788826f0"
+  },
+  {
+    "symbol": "USDT",
+    "name": "Tether USD",
+    "address": "0xF5cFE09b852Ddb164cF6Db419B9c11aAb5F30cb6"
+  },
+  {
+    "symbol": "USDC",
+    "name": "USD Coin",
+    "address": "0xCdA8661fDA031deFCc9BdD88C0e12669Cac47Fb0"
+  },
+  {
+    "symbol": "WBTC",
+    "name": "Wrapped Bitcoin",
+    "address": "0x3edA22460259b29433704dda71cc921F528165Ea"
+  },
+  {
+    "symbol": "eNUSD",
+    "name": "eNUSD Vault",
+    "address": "0x2D41D86bb9E7161561Fa3186B47D160467EFCee3"
+  },
+  {
+    "symbol": "ZNT",
+    "name": "Zentra",
+    "address": "0xD546513d99e6D1A5BAb10e4090cE462fdAb606Cd"
+  },
+  {
+    "symbol": "zWcBTC",
+    "name": "Zentra cBTC",
+    "address": "0x029c0CFE8b4ed243bd6B777043CE3038B3E5C26E"
+  },
+  {
+    "symbol": "eCBTC",
+    "name": "eCBTC Vault",
+    "address": "0x2876a1Fb400c238B0A9e4EdD2e7E03D3CF9b53c2"
+  },
+  {
+    "symbol": "variableDebtZUSDC",
+    "name": "Zentra Variable Debt USDC",
+    "address": "0x7664fF5B43adB01D9F547d5b4CA8CB685b89e6fD"
+  },
+  {
+    "symbol": "veSUMA",
+    "name": "veSUMA",
+    "address": "0x97a4f684620D578312Dc9fFBc4b0EbD8E804ab4a"
+  },
+  {
+    "symbol": "IV-SATS-4-USDC-WCBTC",
+    "name": "ICHI Vault Liquidity",
+    "address": "0x37b9f4994928Ca0A4a98c85ed5Ad5335B2C47B33"
+  },
+  {
+    "symbol": "LPS",
+    "name": "LP Shares",
+    "address": "0x1cF58cecF924439A683520820941A517b0995F0C"
+  },
+  {
+    "symbol": "cbBTC",
+    "name": "Coinbase Wrapped BTC",
+    "address": "0xeAa998aF280a62Ae08BaE4f9fa59C9b30e6BD306"
+  },
+  {
+    "symbol": "zUSDC",
+    "name": "Zentra USDC",
+    "address": "0x5aE84805312F66e0Fe1c44aAee7AbcA0E5AB9ce1"
+  },
+  {
+    "symbol": "IV-SATS-5-WCBTC-USDC",
+    "name": "ICHI Vault Liquidity",
+    "address": "0x7087C26E4B95B02972C3CD0520c69a0F2475D2eb"
+  },
+  {
+    "symbol": "IV-SATS-6-USDC-SUMA",
+    "name": "ICHI Vault Liquidity",
+    "address": "0xf04462C7ce97fF4d38540e3F1ae729113EE88cBc"
+  },
+  {
+    "symbol": "esad",
+    "name": "Esadoshi Nakamoto",
+    "address": "0x7b9fbF92B8C5221Bdd20e20A332F57418E3c4EC9"
+  },
+  {
+    "symbol": "UNI-V2",
+    "name": "Uniswap V2",
+    "address": "0xbbB6A0DFC00B24513e21cc0e9957f18CB537Cf88"
+  },
+  {
+    "symbol": "seCBTC",
+    "name": "Segment CBTC",
+    "address": "0x4FDaA6Fdbb93585A0e888Fa62f309f020e8e5879"
+  },
+  {
+    "symbol": "variableDebtZWcBTC",
+    "name": "Zentra Variable Debt cBTC",
+    "address": "0x78893d90CFBf9D3cc3C9E2CAfC5F94A470bCD0FD"
+  },
+  {
+    "symbol": "IV-SATS-7-SUMA-USDC",
+    "name": "ICHI Vault Liquidity",
+    "address": "0xAA1f7492c1b690f0e82E3a6fd6Ec5A514529d239"
+  },
+  {
+    "symbol": "vivi",
+    "name": "vivi",
+    "address": "0x2d62fb3442b5140f15578758C1b2881B6779dD21"
+  },
+  {
+    "symbol": "cUSD",
+    "name": "cUSD",
+    "address": "0x2fFC18aC99D367b70dd922771dF8c2074af4aCE0"
+  },
+  {
+    "symbol": "WETH",
+    "name": "WETH",
+    "address": "0xfedc5735a7B2894cB63F2c05b5DA3FE81999DE9f"
+  },
+  {
+    "symbol": "ETH",
+    "name": "ETH",
+    "address": "0xeb38e11254190F9cB8c626AF17af95A43DcDC433"
+  },
+  {
+    "symbol": "USDT",
+    "name": "Tether",
+    "address": "0xC6F0cacFddAFd1Ed72b6806a0E1A5a94BD612038"
+  },
+  {
+    "symbol": "IV-SATS-0-USDC-WCBTC",
+    "name": "ICHI Vault Liquidity",
+    "address": "0x781550e0aF9aC6AAD06354Fc406217faD42879fA"
+  },
+  {
+    "symbol": "seUSDC",
+    "name": "Segment USDC",
+    "address": "0xFC415Ebe6c87567b7C5a9A140Ace8c65044E25c9"
+  },
+  {
+    "symbol": "CSM",
+    "name": "Citrus Lime",
+    "address": "0x98a7F6c25a159fB2EFb0595c1924e0d7D159Bd3d"
+  },
+  {
+    "symbol": "citmon",
+    "name": "citmon",
+    "address": "0xFa7B8947C0054aAc432Dcc9bb249A33be890C1D5"
+  },
+  {
+    "symbol": "Shib",
+    "name": "Shiba",
+    "address": "0xB032F73b02a63e9967DE3eBDD9c5D231CF9861d0"
+  },
+  {
+    "symbol": "AM",
+    "name": "ASTON MARTIN",
+    "address": "0x3C90Edc593F0eBca1b171F4d663F73b0Ea62cad5"
+  },
+  {
+    "symbol": "UNI-V2",
+    "name": "Uniswap V2",
+    "address": "0xDd5199850a2B3b1B56B2eCac2ECf4D66A28042dA"
+  },
+  {
+    "symbol": "UNI-V2",
+    "name": "Uniswap V2",
+    "address": "0xFbBe49eFE62C4541143aD21d40Aaeb5f7fbFD551"
+  },
+  {
+    "symbol": "tDOG",
+    "name": "tDOG Coin",
+    "address": "0xB2FAc89F40E786BA67Ee5c0c7C1E1E620623cEf1"
+  },
+  {
+    "symbol": "UNI-V2",
+    "name": "Uniswap V2",
+    "address": "0x58f1B1c00F448720f27AfbfaCc2708c908De47f4"
+  },
+  {
+    "symbol": "tPEPE",
+    "name": "tPEPE Coin",
+    "address": "0x9c6EfF601F8d172904559591611593cf61e900aa"
+  },
+  {
+    "symbol": "UNI-V2",
+    "name": "Uniswap V2",
+    "address": "0xd39Bc16bDE5908063c5fBb082dBb798F18e3525A"
+  },
+  {
+    "symbol": "WETH",
+    "name": "Wrapped Ether",
+    "address": "0x8e2B13c6b007f04b97778E60F557822861EB1341"
+  }
+]
