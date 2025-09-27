@@ -7,6 +7,7 @@ import { config } from "dotenv";
 import { ethers } from "ethers";
 import fs from "fs";
 import path from "path";
+import fetch from "node-fetch";
 
 import { z } from "zod";
 
@@ -15,7 +16,7 @@ import { CitreaFaucet } from "./faucet.js";
 import { CitreaExplorerSummary } from "./explorerSummary.js";
 
 import { createRequire } from "module";
-import { privateKeyToSigner } from "./utils.js";
+import { privateKeyToSigner } from "./utils/privateKeyToSigner.js";
 
 const require = createRequire(import.meta.url);
 const erc20Token = require("../out/erc20Token.sol/erc20Token.json");
@@ -24,7 +25,7 @@ const erc20Token = require("../out/erc20Token.sol/erc20Token.json");
 config();
 
 // Create server instance
-const server = new McpServer(
+export const server = new McpServer(
   {
     name: "citrea-mcp",
     version: "1.0.0",
@@ -35,14 +36,14 @@ const server = new McpServer(
   },
   {
     capabilities: {
-      logging: {
-        jsonrpc: "2.0",
-        id: 1,
-        method: "logging/setLevel",
-        params: {
-          level: "info",
-        },
-      },
+      // logging: {
+      //   jsonrpc: "2.0",
+      //   id: 1,
+      //   method: "logging/setLevel",
+      //   params: {
+      //     level: "info",
+      //   },
+      // },
       resources: {
         subscribe: true,
       },
@@ -57,7 +58,7 @@ const EXPLORER_BASE = "https://explorer.testnet.citrea.xyz";
 const homeDir = process.env.CACHE_DIR || process.env.HOME;
 let mcpDir;
 if (homeDir) {
-  mcpDir = path.join(homeDir, ".citrea-mcp");
+  mcpDir = path.join(homeDir, ".hyperlane-mcp");
   if (!fs.existsSync(mcpDir)) {
     fs.mkdirSync(mcpDir, { recursive: true });
   }
@@ -672,124 +673,89 @@ server.tool(
   }
 );
 
-// server.tool(
-//   "deploy-warp-route",
-//   "Deploys a warp route.",
-//   {
-//     warpChains: z
-//       .array(z.string())
-//       .describe("Warp chains to deploy the route on"),
-//     tokenTypes: z
-//       .array(
-//         z.enum(
-//           TYPE_CHOICES.map((choice) => choice.name) as [string, ...string[]]
-//         )
-//       )
-//       .describe("Token types to deploy"),
-//   },
-//   async ({ warpChains, tokenTypes }) => {
-//     server.server.sendLoggingMessage({
-//       level: "info",
-//       data: `Deploying warp route with chains: ${warpChains.join(
-//         ", "
-//       )} and token types: ${tokenTypes.join(", ")}.`,
-//     });
+server.tool(
+  "list-all-token-balances",
+  "Get all ERC20 token balances owned by an address on Citrea (via explorer API). Supports both tokenlist (balances) and token metadata.",
+  {
+    address: z
+      .string()
+      .length(42)
+      .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid EVM address")
+      .describe("Wallet address to fetch balances for"),
+  },
+  async ({ address }) => {
+    try {
+      const url = `${EXPLORER_BASE}/api?module=account&action=tokenlist&address=${address}`;
+      const res = await fetch(url);
+      const data: any = await res.json();
 
-//     const fileName = `routes/${
-//       warpChains.map((chain, i) => `${chain}:${tokenTypes[i]}`).join("-") +
-//       ".yaml"
-//     }`;
+      if (data.status !== "1" || !data.result) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `❌ Failed to fetch token list: ${
+                data.message || "Unknown error"
+              }`,
+            },
+          ],
+        };
+      }
 
-//     let warpRouteConfig: WarpRouteDeployConfig;
-//     const filePath = path.join(mcpDir, fileName);
+      let output = `📊 Tokens for ${address}\n\n`;
 
-//     if (fs.existsSync(filePath)) {
-//       server.server.sendLoggingMessage({
-//         level: "info",
-//         data: `Warp Route Already exists @ ${fileName} already exists. Skipping Config Creation.`,
-//       });
+      // Case 1: Explorer returns an ARRAY (balances)
+      if (Array.isArray(data.result)) {
+        if (data.result.length === 0) {
+          output += "No ERC20 tokens found for this address.";
+        } else {
+          output += data.result
+            .map((t: any) => {
+              const formatted = ethers.utils.formatUnits(
+                t.balance || "0",
+                parseInt(t.decimal || "18", 10)
+              );
+              return `• ${t.symbol || "UNKNOWN"} (${
+                t.name || "Unknown Token"
+              })\n   Balance: ${formatted}\n   Contract: ${t.contractAddress}`;
+            })
+            .join("\n\n");
+        }
+      }
 
-//       const fileContent = fs.readFileSync(filePath, "utf-8");
-//       warpRouteConfig = yaml.parse(fileContent) as WarpRouteDeployConfig;
+      // Case 2: Explorer returns a SINGLE OBJECT (metadata)
+      else if (typeof data.result === "object") {
+        const t = data.result;
+        output +=
+          `Token: ${t.symbol} (${t.name})\n` +
+          `Decimals: ${t.decimals}\n` +
+          `Total Supply: ${t.totalSupply}\n` +
+          `Contract: ${t.contractAddress}\n` +
+          `Type: ${t.type}`;
+      }
 
-//       return {
-//         content: [
-//           {
-//             type: "text",
-//             text: `Warp Route Config already exists @ ${fileName}. Skipping Config Creation. Config: ${JSON.stringify(
-//               warpRouteConfig,
-//               null,
-//               2
-//             )}`,
-//           },
-//         ],
-//       };
-//     } else {
-//       server.server.sendLoggingMessage({
-//         level: "info",
-//         data: `Creating Warp Route Config @ ${fileName}`,
-//       });
-
-//       warpRouteConfig = await createWarpRouteDeployConfig({
-//         warpChains,
-//         tokenTypes: tokenTypes.map(
-//           (t) => TokenType[t as keyof typeof TokenType]
-//         ),
-//         signerAddress: signer.address,
-//         registry,
-//         outPath: "./warpRouteDeployConfig.yaml",
-//       });
-
-//       server.server.sendLoggingMessage({
-//         level: "info",
-//         data: `Warp route deployment config created: ${JSON.stringify(
-//           warpRouteConfig,
-//           null,
-//           2
-//         )}`,
-//       });
-//     }
-
-//     const chainMetadata: ChainMap<ChainMetadata> = {};
-//     for (const chain of warpChains) {
-//       chainMetadata[chain] = (await registry.getChainMetadata(chain))!;
-//     }
-
-//     const multiProvider = new MultiProvider(chainMetadata, {
-//       signers: Object.fromEntries(warpChains.map((chain) => [chain, signer])),
-//     });
-
-//     const deploymentConfig = await deployWarpRoute({
-//       registry,
-//       chainMetadata,
-//       multiProvider,
-//       warpRouteDeployConfig: warpRouteConfig,
-//       filePath,
-//     });
-
-//     server.server.sendLoggingMessage({
-//       level: "info",
-//       data: `Warp route deployed successfully. Config: ${JSON.stringify(
-//         warpRouteConfig,
-//         null,
-//         2
-//       )}`,
-//     });
-
-//     return {
-//       content: [
-//         {
-//           type: "text",
-//           text: `Warp route deployment config created successfully. Config: ${JSON.stringify(
-//             deploymentConfig,
-//             null,
-//             2
-//           )}`,
-//         },
-//       ],
-//     };
-//   }
-// );
+      return {
+        content: [
+          {
+            type: "text",
+            text: output,
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Error fetching token balances: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          },
+        ],
+      };
+    }
+  }
+);
 
 async function main() {
   const transport = new StdioServerTransport();

@@ -4,12 +4,14 @@
   "main": "index.js",
   "type": "module",
   "bin": {
-    "hyperlane-mcp": "./build/index.js"
+    "citrea-mcp": "./dist/server.js"
   },
   "scripts": {
     "build": "tsc && chmod 755 build/index.js",
     "inspect": "pnpm build && npx @modelcontextprotocol/inspector node build/index.js",
-    "start": "pnpm build && node build/index.js"
+    "start": "pnpm build && node build/index.js",
+    "citrea-cli": "node src/natural-mcp-client.js 'node src/index.ts'",
+    "citrea-cli-interactive": "node src/natural-mcp-client.js 'tsx src/index.ts'"
   },
   "files": [
     "build"
@@ -30,10 +32,12 @@
     "@hyperlane-xyz/utils": "8.6.1",
     "@modelcontextprotocol/sdk": "1.7.0",
     "@openzeppelin/contracts": "^5.4.0",
+    "commander": "^14.0.1",
     "dockerode": "^4.0.6",
     "dotenv": "^16.5.0",
     "ethers": "^5.8.0",
     "ethers-types": "^3.18.1",
+    "node-fetch": "^3.3.2",
     "uri-templates": "^0.2.0",
     "yaml": "^2.7.1",
     "yargs": "^17.7.2",

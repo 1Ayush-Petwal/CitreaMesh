@@ -1,5 +1,4 @@
-import { ethers } from 'ethers';
-import logger from './logger.js';
+import { ethers } from "ethers";
 
 export interface TransactionSummary {
   hash: string;
@@ -11,7 +10,7 @@ export interface TransactionSummary {
   gasCost: string; // formatted gas cost in ETH/cBTC
   blockNumber: number;
   timestamp: number;
-  status: 'success' | 'failed';
+  status: "success" | "failed";
   confirmations: number;
   explorerUrl: string;
 }
@@ -43,37 +42,50 @@ export class CitreaExplorerSummary {
   /**
    * Get comprehensive wallet summary including recent transactions
    */
-  async getWalletSummary(address: string, limit: number = 10): Promise<WalletSummary> {
+  async getWalletSummary(
+    address: string,
+    limit: number = 10
+  ): Promise<WalletSummary> {
     try {
       // Add overall timeout for the entire operation
-      return await this.withTimeout(this.getWalletSummaryInternal(address, limit), 30000); // 30 second timeout
+      return await this.withTimeout(
+        this.getWalletSummaryInternal(address, limit),
+        30000
+      ); // 30 second timeout
     } catch (error) {
-      logger.error(`Error getting wallet summary for ${address}: ${error instanceof Error ? error.message : String(error)}`);
-      throw new Error(`Failed to get wallet summary: ${error instanceof Error ? error.message : String(error)}`);
+      // logger.error(`Error getting wallet summary for ${address}: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to get wallet summary: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
 
   /**
    * Internal method for wallet summary without timeout wrapper
    */
-  private async getWalletSummaryInternal(address: string, limit: number): Promise<WalletSummary> {
+  private async getWalletSummaryInternal(
+    address: string,
+    limit: number
+  ): Promise<WalletSummary> {
     // Get current balance and transaction count
     const [balance, transactionCount, currentBlock] = await Promise.all([
       this.provider.getBalance(address),
       this.provider.getTransactionCount(address),
-      this.provider.getBlock('latest')
+      this.provider.getBlock("latest"),
     ]);
 
     const formattedBalance = ethers.utils.formatEther(balance);
-    
+
     // Use a smaller, more reasonable block range for scanning
     const maxBlocksToScan = Math.min(100, currentBlock.number);
     const fromBlock = Math.max(0, currentBlock.number - maxBlocksToScan);
-    
+
     // Scan recent blocks for transactions involving this address
     const recentTransactions = await this.scanRecentTransactions(
-      address, 
-      limit, 
+      address,
+      limit,
       fromBlock
     );
 
@@ -91,8 +103,8 @@ export class CitreaExplorerSummary {
       blockRange: {
         from: fromBlock,
         to: currentBlock.number,
-        scanned: maxBlocksToScan
-      }
+        scanned: maxBlocksToScan,
+      },
     };
   }
 
@@ -103,20 +115,27 @@ export class CitreaExplorerSummary {
     try {
       const [tx, receipt] = await Promise.all([
         this.provider.getTransaction(txHash),
-        this.provider.getTransactionReceipt(txHash)
+        this.provider.getTransactionReceipt(txHash),
       ]);
 
       if (!tx || !receipt) {
-        throw new Error('Transaction not found');
+        throw new Error("Transaction not found");
       }
 
-      const currentBlock = await this.provider.getBlock('latest');
-      const confirmations = Math.max(0, currentBlock.number - receipt.blockNumber);
+      const currentBlock = await this.provider.getBlock("latest");
+      const confirmations = Math.max(
+        0,
+        currentBlock.number - receipt.blockNumber
+      );
 
       return this.formatTransactionSummary(tx, receipt, confirmations);
     } catch (error) {
-      logger.error(`Error getting transaction details for ${txHash}: ${error instanceof Error ? error.message : String(error)}`);
-      throw new Error(`Failed to get transaction details: ${error instanceof Error ? error.message : String(error)}`);
+      // logger.error(`Error getting transaction details for ${txHash}: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to get transaction details: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
 
@@ -125,48 +144,62 @@ export class CitreaExplorerSummary {
    * Optimized with batching and limited block range to prevent timeouts
    */
   private async scanRecentTransactions(
-    address: string, 
-    limit: number, 
+    address: string,
+    limit: number,
     fromBlock: number
   ): Promise<TransactionSummary[]> {
     const transactions: TransactionSummary[] = [];
-    const currentBlock = await this.provider.getBlock('latest');
-    
+    const currentBlock = await this.provider.getBlock("latest");
+
     // Limit the scan to a reasonable range to prevent timeouts
     const maxBlocksToScan = Math.min(100, currentBlock.number - fromBlock);
-    const actualFromBlock = Math.max(fromBlock, currentBlock.number - maxBlocksToScan);
-    
-    logger.info(`Scanning blocks ${actualFromBlock} to ${currentBlock.number} for address ${address} (max ${maxBlocksToScan} blocks)`);
+    const actualFromBlock = Math.max(
+      fromBlock,
+      currentBlock.number - maxBlocksToScan
+    );
+
+    // logger.info(`Scanning blocks ${actualFromBlock} to ${currentBlock.number} for address ${address} (max ${maxBlocksToScan} blocks)`);
 
     // Process blocks in batches to prevent timeouts
     const batchSize = 10;
     const totalBlocks = currentBlock.number - actualFromBlock + 1;
-    
-    for (let batchStart = currentBlock.number; batchStart >= actualFromBlock && transactions.length < limit; batchStart -= batchSize) {
+
+    for (
+      let batchStart = currentBlock.number;
+      batchStart >= actualFromBlock && transactions.length < limit;
+      batchStart -= batchSize
+    ) {
       const batchEnd = Math.max(actualFromBlock, batchStart - batchSize + 1);
-      
+
       try {
         // Process batch of blocks concurrently but with timeout
         const batchPromises = [];
-        for (let blockNum = batchStart; blockNum >= batchEnd && transactions.length < limit; blockNum--) {
-          batchPromises.push(this.processBlock(blockNum, address, currentBlock.number));
+        for (
+          let blockNum = batchStart;
+          blockNum >= batchEnd && transactions.length < limit;
+          blockNum--
+        ) {
+          batchPromises.push(
+            this.processBlock(blockNum, address, currentBlock.number)
+          );
         }
-        
+
         // Wait for batch with timeout
-        const batchResults = await Promise.allSettled(batchPromises.map(p => 
-          this.withTimeout(p, 5000) // 5 second timeout per batch
-        ));
-        
+        const batchResults = await Promise.allSettled(
+          batchPromises.map(
+            (p) => this.withTimeout(p, 5000) // 5 second timeout per batch
+          )
+        );
+
         // Collect successful results
         for (const result of batchResults) {
-          if (result.status === 'fulfilled' && result.value) {
+          if (result.status === "fulfilled" && result.value) {
             transactions.push(...result.value);
             if (transactions.length >= limit) break;
           }
         }
-        
       } catch (error) {
-        logger.error(`Error processing batch starting at block ${batchStart}: ${error instanceof Error ? error.message : String(error)}`);
+        // logger.error(`Error processing batch starting at block ${batchStart}: ${error instanceof Error ? error.message : String(error)}`);
         // Continue with next batch
       }
     }
@@ -180,28 +213,40 @@ export class CitreaExplorerSummary {
   /**
    * Process a single block for transactions involving the address
    */
-  private async processBlock(blockNum: number, address: string, currentBlockNum: number): Promise<TransactionSummary[]> {
+  private async processBlock(
+    blockNum: number,
+    address: string,
+    currentBlockNum: number
+  ): Promise<TransactionSummary[]> {
     try {
       const block = await this.provider.getBlockWithTransactions(blockNum);
       const blockTransactions: TransactionSummary[] = [];
-      
+
       for (const tx of block.transactions) {
         // Check if transaction involves our address
-        if (tx.from?.toLowerCase() === address.toLowerCase() || 
-            tx.to?.toLowerCase() === address.toLowerCase()) {
-          
+        if (
+          tx.from?.toLowerCase() === address.toLowerCase() ||
+          tx.to?.toLowerCase() === address.toLowerCase()
+        ) {
           const receipt = await this.provider.getTransactionReceipt(tx.hash);
           if (receipt) {
-            const confirmations = Math.max(0, currentBlockNum - receipt.blockNumber);
-            const txSummary = this.formatTransactionSummary(tx, receipt, confirmations);
+            const confirmations = Math.max(
+              0,
+              currentBlockNum - receipt.blockNumber
+            );
+            const txSummary = this.formatTransactionSummary(
+              tx,
+              receipt,
+              confirmations
+            );
             blockTransactions.push(txSummary);
           }
         }
       }
-      
+
       return blockTransactions;
     } catch (error) {
-      logger.error(`Error processing block ${blockNum}: ${error instanceof Error ? error.message : String(error)}`);
+      // logger.error(`Error processing block ${blockNum}: ${error instanceof Error ? error.message : String(error)}`);
       return [];
     }
   }
@@ -212,9 +257,12 @@ export class CitreaExplorerSummary {
   private withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
     return Promise.race([
       promise,
-      new Promise<T>((_, reject) => 
-        setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs)
-      )
+      new Promise<T>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`Operation timed out after ${timeoutMs}ms`)),
+          timeoutMs
+        )
+      ),
     ]);
   }
 
@@ -227,23 +275,27 @@ export class CitreaExplorerSummary {
     confirmations: number
   ): TransactionSummary {
     const gasUsed = receipt.gasUsed.toString();
-    const gasPrice = tx.gasPrice ? tx.gasPrice.toString() : '0';
-    const gasPriceGwei = tx.gasPrice ? ethers.utils.formatUnits(tx.gasPrice, 'gwei') : '0';
-    const gasCost = tx.gasPrice ? ethers.utils.formatEther(receipt.gasUsed.mul(tx.gasPrice)) : '0';
-    
+    const gasPrice = tx.gasPrice ? tx.gasPrice.toString() : "0";
+    const gasPriceGwei = tx.gasPrice
+      ? ethers.utils.formatUnits(tx.gasPrice, "gwei")
+      : "0";
+    const gasCost = tx.gasPrice
+      ? ethers.utils.formatEther(receipt.gasUsed.mul(tx.gasPrice))
+      : "0";
+
     return {
       hash: tx.hash,
       from: tx.from,
       to: tx.to || null,
-      value: ethers.utils.formatEther(tx.value || '0'),
+      value: ethers.utils.formatEther(tx.value || "0"),
       gasUsed,
       gasPrice: gasPriceGwei,
       gasCost,
       blockNumber: receipt.blockNumber,
       timestamp: 0, // Will be set if block timestamp is available
-      status: receipt.status === 1 ? 'success' : 'failed',
+      status: receipt.status === 1 ? "success" : "failed",
       confirmations,
-      explorerUrl: `${this.explorerBaseUrl}/tx/${tx.hash}`
+      explorerUrl: `${this.explorerBaseUrl}/tx/${tx.hash}`,
     };
   }
 
@@ -257,9 +309,9 @@ export class CitreaExplorerSummary {
   } {
     if (transactions.length === 0) {
       return {
-        totalGasUsed: '0',
-        averageGasPrice: '0',
-        totalGasCost: '0'
+        totalGasUsed: "0",
+        averageGasPrice: "0",
+        totalGasCost: "0",
       };
     }
 
@@ -269,22 +321,27 @@ export class CitreaExplorerSummary {
 
     for (const tx of transactions) {
       totalGasUsed = totalGasUsed.add(tx.gasUsed);
-      
+
       // Convert gas price from gwei to wei for calculation
-      const gasPriceWei = ethers.utils.parseUnits(tx.gasPrice, 'gwei');
+      const gasPriceWei = ethers.utils.parseUnits(tx.gasPrice, "gwei");
       totalGasPriceWei = totalGasPriceWei.add(gasPriceWei);
-      
+
       // Add gas cost
-      totalGasCostWei = totalGasCostWei.add(ethers.utils.parseEther(tx.gasCost));
+      totalGasCostWei = totalGasCostWei.add(
+        ethers.utils.parseEther(tx.gasCost)
+      );
     }
 
     const averageGasPriceWei = totalGasPriceWei.div(transactions.length);
-    const averageGasPriceGwei = ethers.utils.formatUnits(averageGasPriceWei, 'gwei');
+    const averageGasPriceGwei = ethers.utils.formatUnits(
+      averageGasPriceWei,
+      "gwei"
+    );
 
     return {
       totalGasUsed: totalGasUsed.toString(),
       averageGasPrice: averageGasPriceGwei,
-      totalGasCost: ethers.utils.formatEther(totalGasCostWei)
+      totalGasCost: ethers.utils.formatEther(totalGasCostWei),
     };
   }
 
