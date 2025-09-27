@@ -20,6 +20,10 @@ const erc20Token = require("./contracts/erc/erc20Token.sol/erc20Token.json");
 // Load environment variables from .env file
 config();
 // Create server instance
+const PORT = 3000;
+app.listen(PORT, () => {
+    console.log(`MCP Stateless Streamable HTTP Server listening on PORT ${PORT}`);
+});
 function getServer() {
     const server = new McpServer({
         name: "citrea-mcp",
@@ -624,8 +628,4 @@ app.post("/mcp", async (req, res) => {
             });
         }
     }
-});
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`MCP Stateless Streamable HTTP Server listening on PORT ${PORT}`);
 });
