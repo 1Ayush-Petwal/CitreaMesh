@@ -27,6 +27,11 @@ config();
 
 // Create server instance
 
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`MCP Stateless Streamable HTTP Server listening on PORT ${PORT}`);
+});
+
 function getServer() {
   const server = new McpServer(
     {
@@ -802,9 +807,4 @@ app.post("/mcp", async (req: Request, res: Response) => {
       });
     }
   }
-});
-
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`MCP Stateless Streamable HTTP Server listening on PORT ${PORT}`);
 });
