@@ -1,410 +1,269 @@
-## CitraMesh - Citrea MCP Server 
+# CitreaMesh
 
-A powerful Model Context Protocol (MCP) server that provides seamless integration with the Hyperlane protocol, enabling LLM assistants to interact with cross-chain messaging and smart contracts across multiple blockchains.
+A Model Context Protocol (MCP) server for seamless interaction with the **Citrea Testnet**. This server empowers LLM assistants to perform on-chain actions, including checking balances, using a testnet faucet, deploying and transferring ERC20 tokens, and analyzing wallet activity.
+
+This project enhances the developer and user experience by abstracting away the complexity of interacting with browsers and wallets, providing a simple interface through a familiar LLM chat application. It aims to help Citrea onboard more developers and users into its ecosystem.
+
+-----
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [How It Works](#how-it-works)
-- [Features](#features)
-- [Requirements](#requirements)
-- [Installation & Setup](#installation--setup)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Available Tools](#available-tools)
-- [Project Structure](#project-structure)
-- [Files & Folders Created](#files--folders-created)
-- [Examples](#examples)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [License](#license)
+  - [Overview](https://www.google.com/search?q=%23overview)
+  - [How It Works](https://www.google.com/search?q=%23how-it-works)
+  - [Features](https://www.google.com/search?q=%23features)
+  - [Requirements](https://www.google.com/search?q=%23requirements)
+  - [Installation & Setup](https://www.google.com/search?q=%23installation--setup)
+  - [Configuration](https://www.google.com/search?q=%23configuration)
+  - [Usage](https://www.google.com/search?q=%23usage)
+  - [Available Tools](https://www.google.com/search?q=%23available-tools)
+  - [Project Structure](https://www.google.com/search?q=%23project-structure)
+  - [Files & Folders Created](https://www.google.com/search?q=%23files--folders-created)
+  - [Examples](https://www.google.com/search?q=%23examples)
+  - [Troubleshooting](https://www.google.com/search?q=%23troubleshooting)
+  - [Contributing](https://www.google.com/search?q=%23contributing)
+  - [License](https://www.google.com/search?q=%23license)
+
+-----
 
 ## Overview
 
-The Citrea MCP Server bridges the gap between LLM assistants and the Developers building on Citrea Ecosystem. It provides a standardized interface for the users to manage there day to day tasks for building in the ecosystem, geting Wallet Balance, gettingFaucet, deployingCustom ERC20 etc.
+The Citrea MCP Server acts as a bridge between Large Language Models and the Citrea blockchain ecosystem. It exposes a suite of tools that allow an AI assistant to execute blockchain operations based on natural language commands. This simplifies the developer and user experience, making it easier to build, test, and interact with applications on Citrea.
+
+-----
 
 ## How It Works
 
-### Architecture
+The server is built using the `@modelcontextprotocol/sdk` and `ethers.js`. It listens for JSON-RPC requests from an MCP client (like a compatible LLM assistant). When a request invokes a registered tool, the server executes the corresponding function—such as calling the Citrea RPC endpoint, managing a local faucet database, or sending a transaction—and returns a formatted, human-readable response.
 
-The server operates as an MCP (Model Context Protocol) server that:
-
-1. **Connects to Multiple Blockchains**: Uses Hyperlane's MultiProvider to manage connections to various blockchain networks
-2. **Manages Local Registry**: Maintains a local cache of chain metadata, deployed contracts, and warp route configurations
-3. **Deploys Infrastructure**: Handles deployment of Hyperlane core contracts, validators, and relayers
-4. **Facilitates Cross-Chain Operations**: Enables message passing and asset
-5. **Provides Docker Integration**: 
-
-### Core Components
-
-- **LocalRegistry**: Extends Hyperlane's registry system with local storage capabilities
-- **HyperlaneDeployer**: Handles deployment of core Hyperlane contracts
-- **ValidatorRunner**: Manages validator Docker containers
-- **RelayerRunner**: Manages relayer Docker containers
-- **WarpRoute**: Handles deployment and management of cross-chain asset routes
+-----
 
 ## Features
 
-### Cross-Chain Messaging
-- Send messages between different blockchain networks
-- Monitor message delivery status
-- Handle message verification and execution
+  * **Wallet Management**: Check native (cBTC) and ERC20 token balances.
+  * **Testnet Faucet**: A built-in faucet to claim testnet cBTC, with eligibility checks, history, and usage stats.
+  * **ERC20 Token Utilities**: Deploy new ERC20 tokens, list previously deployed tokens, and transfer them between addresses.
+  * **Blockchain Explorer**: Generate explorer URLs and fetch detailed, RPC-grounded summaries for wallets and transactions.
 
-### Contract Deployment & Management
-- Deploy Hyperlane core contracts to new chains
-- Deploy and configure warp routes for asset transfers
-- Manage contract configurations and upgrades
-
-### Infrastructure Management
-- Run validators for message verification
-- Run relayers for message delivery
-- Monitor validator and relayer health
-- Handle Docker container lifecycle
-
-### Asset Transfers
-- Deploy warp routes for cross-chain asset transfers
-- Execute multi-hop asset transfers
-- Support various token types (native, synthetic, collateral, etc.)
+-----
 
 ## Requirements
 
-### System Requirements
-- **Node.js**: v18 or higher
-- **Package Manager**: pnpm (recommended)
-- **Docker**: For running validators and relayers
-- **Operating System**: Linux, macOS, or Windows with WSL2
+### System
 
-### Network Requirements
-- Access to RPC endpoints for target blockchain networks
-- Stable internet connection for cross-chain operations
-- Sufficient bandwidth for Docker image downloads
+  * Node.js: v18 or higher
+  * Package Manager: pnpm (recommended) or npm/yarn
+  * OS: Linux, macOS, or Windows
 
-### Blockchain Requirements
-- Private key with sufficient native tokens for gas fees
-- Access to blockchain RPC endpoints
-- Understanding of target chain configurations
+### Blockchain
+
+  * A private key with a small amount of testnet cBTC for gas fees on the Citrea Testnet.
+
+-----
 
 ## Installation & Setup
 
-### 1. Clone the Repository
+This repository has two primary branches:
 
-```bash
-git clone https://github.com/yourusername/hyperlane-mcp.git
-cd hyperlane-mcp
+  * `main`: Uses a **STDIO transport**, designed for running the server locally.
+  * `HTTPStream`: Uses an **HTTP Streamable transport**, designed for deploying as a web service.
+
+For a deployed service, you can configure your client directly:
+
+```json
+"mcpServers": {
+  "citrea": {
+    "url": "https://citramesh.onrender.com/"
+  }
+}
 ```
 
-### 2. Install Dependencies
+If you deploy your own backend on a service like Render, remember to provide your `PRIVATE_KEY` and `GITHUB_TOKEN` as environment variables.
 
-```bash
-# Install pnpm if not already installed
-npm install -g pnpm
+### Local Setup Steps
 
-# Install project dependencies
-pnpm install
-```
+1.  **Clone the Repository**
 
-### 3. Build the Project
+    ```bash
+    git clone https://github.com/your-username/citrea-mcp-server.git
+    cd citrea-mcp-server
+    ```
 
-```bash
-pnpm build
-```
+2.  **Install Dependencies**
 
-### 4. Set Up Environment Variables
+    ```bash
+    # Install pnpm if you don't have it
+    npm install -g pnpm
 
-Create a `.env` file in the project root:
+    # Install project dependencies
+    pnpm install
+    ```
 
-```bash
-cp .env.example .env
-```
+3.  **Set Up Environment Variables**
+    Create a `.env` file by copying the example:
 
-Edit the `.env` file with your configuration:
+    ```bash
+    cp .env.example .env
+    ```
 
-```env
-# Required: Private key for signing transactions (without 0x prefix)
-PRIVATE_KEY=your_private_key_here
+    Now, edit the `.env` file with your details:
 
-# Required: GitHub Personal Access Token for registry access
-GITHUB_TOKEN=your_github_personal_access_token
+    ```env
+    # Your 64-character hex private key (without the '0x' prefix)
+    PRIVATE_KEY=your_private_key_here
 
-# Optional: Custom cache directory (defaults to ~/.hyperlane-mcp)
-CACHE_DIR=/path/to/custom/cache/directory
-```
+    # Required: GitHub Personal Access Token for certain functionalities
+    GITHUB_TOKEN=your_github_personal_access_token
 
-### 5. Verify Docker Installation
+    # Optional: Specify a custom directory for caching data (defaults to ~/.citrea-mcp)
+    CACHE_DIR=/path/to/custom/cache/directory
+    ```
 
-```bash
-# Ensure Docker is running
-docker --version
-docker ps
-```
+-----
 
 ## Configuration
 
 ### Environment Variables
 
 | Variable | Required | Description | Default |
-|----------|----------|-------------|---------|
-| `PRIVATE_KEY` | Yes | Private key for transaction signing (without 0x prefix) | None |
-| `GITHUB_TOKEN` | Yes | GitHub PAT for accessing Hyperlane registry | None |
-| `CACHE_DIR` | No | Directory for storing local data | `~/.hyperlane-mcp` |
-| `HOME` | No | Home directory (fallback for CACHE_DIR) | System default |
+| :--- | :--- | :--- | :--- |
+| `PRIVATE_KEY` | **Yes** | Private key for signing transactions (deploying tokens, funding faucet claims). | None |
+| `GITHUB_TOKEN` | **Yes** | GitHub Personal Access Token, which may be required for registry access. | None |
+| `CACHE_DIR` | No | Absolute path to a directory for storing local data like faucet history. | `~/.citrea-mcp` |
+| `HOME` | No | Home directory, used as a fallback if `CACHE_DIR` is not set. | System default |
 
 ### MCP Client Configuration
 
-For Claude Desktop or other MCP clients, add this configuration:
+To connect this server locally to a client like Claude Desktop, use this configuration:
 
 ```json
 {
   "mcpServers": {
-    "hyperlane": {
+    "citrea": {
       "command": "node",
       "args": [
-        "/path/to/hyperlane-mcp/build/index.js"
+        "/path/to/your/project/build/index.js"
       ],
       "env": {
-        "PRIVATE_KEY": "your_private_key",
-        "GITHUB_TOKEN": "your_github_token"
-        "CACHE_DIR": "your_cache_dir"
+        "PRIVATE_KEY": "your_private_key_here",
+        "GITHUB_TOKEN": "your_github_personal_access_token"
       }
     }
   }
 }
 ```
 
+*Note: You can also add `"CACHE_DIR": "/path/to/custom/cache/directory"` inside the `env` object if needed.*
+
+-----
+
 ## Usage
 
 ### Starting the Server
 
+The server is designed to be run by an MCP client. However, you can run it directly from your terminal for testing if you are on the `HTTPStream` branch.
+
 ```bash
-# Development mode
+# Start the server (it will listen on port 3000 by default)
 pnpm start
-
-# Production mode
-node build/index.js
-
-# With MCP Inspector (for debugging)
-pnpm inspect
 ```
 
-### Basic Workflow
+You can then send POST requests to `http://localhost:3000/mcp` with a valid MCP JSON-RPC payload.
 
-1. **Deploy a New Chain**: Use `deploy-chain` tool to add a new blockchain
-2. **Run Validator**: Use `run-validator` to start message validation
-3. **Run Relayer**: Use `run-relayer` to enable message delivery
-4. **Deploy Warp Route**: Use `deploy-warp-route` for asset transfers
-5. **Send Messages/Assets**: Use transfer tools for cross-chain operations
+-----
 
 ## Available Tools
 
-### Chain Management
-- **`deploy-chain`**: Deploy Hyperlane core contracts to a new chain
-- **`run-validator`**: Start a validator for a specific chain
-- **`run-relayer`**: Start a relayer for cross-chain message delivery
+  * `get_citrea_balance`: Get the native cBTC balance of a specific address.
+  * `deploy-erc20`: Deploys a new ERC20 token contract to the Citrea testnet.
+  * `list-deployed-tokens`: Lists all ERC20 tokens that have been deployed and cached by this server instance.
+  * `transfer-token`: Transfer a specified amount of a deployed ERC20 token to a recipient.
+  * `list-all-token-balances`: Fetches and lists all ERC20 token balances for a given address using the explorer API.
+  * `claim-citrea-faucet`: Request testnet funds from the server's faucet for a given address.
+  * `check-faucet-eligibility`: Check if an address can currently claim from the faucet.
+  * `get-faucet-stats`: View statistics for the faucet, like total claims and remaining balance.
+  * `get-faucet-history`: Retrieve the history of all claims made from the faucet, or filter by a specific address.
+  * `get-citrea-explorer-url`: Generate a Citrea testnet explorer link for an address, transaction, or block.
+  * `get-wallet-explorer-summary`: Provides a comprehensive analysis of a wallet, including balance, transaction count, and recent activity.
+  * `get-transaction-details`: Fetches detailed information for a specific transaction hash.
 
-### Cross-Chain Operations
-- **`cross-chain-message-transfer`**: Send messages between chains
-- **`cross-chain-asset-transfer`**: Transfer assets using warp routes
-
-### Warp Route Management
-- **`deploy-warp-route`**: Deploy new warp routes for asset transfers
-
-### Resources
-- **Warp Route Configs**: Access via `hyperlane-warp:///{symbol}/{/chain*}` URI
+-----
 
 ## Project Structure
 
 ```
-hyperlane-mcp/
-├── src/                          # Source code
-│   ├── index.ts                  # Main MCP server entry point
-│   ├── localRegistry.ts          # Local registry implementation
-│   ├── hyperlaneDeployer.ts      # Core contract deployment
-│   ├── RunValidator.ts           # Validator Docker management
-│   ├── RunRelayer.ts             # Relayer Docker management
-│   ├── warpRoute.ts              # Warp route deployment
-│   ├── msgTransfer.ts            # Message transfer logic
-│   ├── assetTransfer.ts          # Asset transfer logic
-│   ├── config.ts                 # Configuration utilities
-│   ├── utils.ts                  # Utility functions
-│   ├── types.ts                  # Type definitions
-│   ├── logger.ts                 # Logging configuration
-│   ├── gcr.ts                    # Google Container Registry utilities
-│   ├── file.ts                   # File system utilities
-│   ├── configOpts.ts             # Configuration options
-│   └── consts.ts                 # Constants
-├── build/                        # Compiled JavaScript output
-├── node_modules/                 # Dependencies
-├── package.json                  # Project configuration
-├── tsconfig.json                 # TypeScript configuration
-├── .env                          # Environment variables (create this)
-└── README.md                     # This file
+CitreaMesh/
+├── src/
+│   ├── contracts/              # Smart contract ABIs and related files
+│   │   ├── erc/                # ERC standard contract definitions
+│   │   └── mostUsedTokens.json # A list of common tokens
+│   ├── utils/                  # General utility functions
+│   │   ├── cacheTokens.ts      # Saves deployed token data locally
+│   │   └── privateKeyToSigner.ts # Creates an ethers.js signer from a key
+│   ├── index.ts                # Main server entry point and tool definitions
+│   ├── tokenTransfer.ts        # Handles the logic for transferring ERC20 tokens
+│   ├── faucet.ts               # Manages and processes claims for the testnet faucet
+│   ├── explorerSummary.ts      # Fetches and formats data from the explorer/RPC
+│   ├── configOpts.ts           # Configuration-related options
+│   └── file.ts                 # File system utilities
+├── .env.example                # Example environment variables file
+├── .gitignore                  # Specifies files for Git to ignore
+├── package.json                # Project dependencies and scripts
+└── README.md                   # This documentation file
 ```
+
+-----
 
 ## Files & Folders Created
 
-The server creates and manages several directories and files during operation:
+When you run the server, it may create the following in your home directory (or `CACHE_DIR` if specified):
 
-### Cache Directory Structure
 ```
-~/.hyperlane-mcp/                 # Main cache directory
-├── chains/                       # Chain configurations
-│   ├── {chainName}.yaml          # Chain metadata
-│   ├── {chainName}.deploy.yaml   # Deployed contract addresses
-│   └── {chainName}-core-config.yaml # Core deployment config
-├── routes/                       # Warp route configurations
-│   └── {symbol}-{hash}.yaml      # Warp route configs
-├── agents/                       # Agent configurations
-│   └── {chainName}-agent-config.json # Validator/relayer configs
-└── logs/                         # Runtime data and logs
-    ├── hyperlane_db_validator_{chain}/ # Validator database
-    ├── hyperlane_db_relayer/     # Relayer database
-    └── hyperlane-validator-signatures-{chain}/ # Validator signatures
+~/.citrea-mcp/
+├── faucet-claims.json      # Stores the history of all faucet claims
+└── deployed-tokens.json    # A cache of ERC20 tokens deployed by the `deploy-erc20` tool
 ```
 
-### File Types Created
-
-#### Chain Configuration Files
-- **`{chainName}.yaml`**: Contains chain metadata (RPC URLs, chain ID, native token info)
-- **`{chainName}.deploy.yaml`**: Deployed contract addresses (mailbox, ISM, hooks, etc.)
-- **`{chainName}-core-config.yaml`**: Core deployment configuration
-
-#### Warp Route Files
-- **`{symbol}-{hash}.yaml`**: Warp route configuration for cross-chain asset transfers
-
-#### Agent Configuration Files
-- **`{chainName}-agent-config.json`**: Configuration for validators and relayers
-
-#### Docker Volumes
-- **Validator databases**: Persistent storage for validator state
-- **Relayer databases**: Persistent storage for relayer state
-- **Signature storage**: Validator checkpoint signatures
-
-### Temporary Files
-- **Docker containers**: Validator and relayer containers (managed automatically)
-- **Log files**: Runtime logs from validators and relayers
+-----
 
 ## Examples
 
-### 1. Deploy a New Chain
+1.  **Check cBTC Balance**
 
-```
-Deploy Hyperlane core contracts to a new blockchain called "mytestnet" with chain ID 12345, RPC URL "https://rpc.mytestnet.com", native token symbol "MTN", and token name "MyTestNet Token". This should be marked as a testnet.
-```
+    > "What is the balance of 0x... on Citrea?"
 
-### 2. Send Cross-Chain Message
+2.  **Use the Faucet**
 
-```
-Send a cross-chain message from Ethereum to Polygon. The recipient address should be 0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6 and the message body should be "Hello from Ethereum!"
-```
+    > "Claim testnet cBTC from the faucet for my address 0x..."
 
-### 3. Deploy Warp Route
+3.  **Deploy a New Token**
 
-```
-Deploy a warp route for asset transfers between Ethereum and Arbitrum chains. Use collateral token type for Ethereum and synthetic token type for Arbitrum.
-```
+    > "Deploy a new ERC20 token named 'MyCoin' with the symbol 'MYC' and an initial supply of 1,000,000."
 
-### 4. Transfer Assets
+4.  **Transfer Tokens**
 
-```
-Transfer assets using the USDC warp route from Ethereum to Arbitrum. Transfer 100 USDC to recipient address 0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6. First, fetch the warp route configuration for USDC on these chains using the resources.
-```
+    > "Send 500 MYC to address 0x..."
 
-### 5. Run Infrastructure
+5.  **Analyze a Wallet**
 
-```
-Start a validator for the "mytestnet" chain that we deployed earlier.
-```
+    > "Give me a summary of the wallet activity for 0x..."
 
-```
-Start a relayer to handle message delivery between Ethereum and mytestnet chains. Use "mytestnet" as the validator chain name.
-```
-
-### 6. Multi-Chain Asset Transfer
-
-```
-Transfer 50 USDC from Ethereum to Polygon, then from Polygon to Arbitrum, using the existing USDC warp routes. The final recipient should be 0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6.
-```
-
-### 7. Check Warp Route Resources
-
-```
-Show me the available warp route configurations for USDC token across Ethereum and Polygon chains.
-```
-
-### 8. Deploy Custom Token Route
-
-```
-Deploy a new warp route for a custom token called "MyToken" (symbol: MTK) between three chains: Ethereum (collateral type), Polygon (synthetic type), and Arbitrum (synthetic type).
-```
+-----
 
 ## Troubleshooting
 
-### Common Issues
+  * **"Invalid private key" Error**: Ensure your `PRIVATE_KEY` in the `.env` file is 64 hexadecimal characters long and does not have the `0x` prefix.
+  * **"Insufficient funds" Error**: The wallet associated with your `PRIVATE_KEY` may not have enough cBTC to pay for transaction gas. Use the faucet tool with a different address to send funds to it, or acquire testnet cBTC from another source.
+  * **RPC Errors**: The Citrea testnet RPC might be temporarily down or slow. Check the official Citrea channels for status updates.
+  * **File Permissions**: Ensure the application has permission to read/write to the cache directory (`~/.citrea-mcp` or your custom `CACHE_DIR`).
 
-#### 1. Docker Permission Errors
-```bash
-# Add user to docker group (Linux)
-sudo usermod -aG docker $USER
-# Restart shell or logout/login
-```
-
-#### 2. Insufficient Gas Fees
-- Ensure your wallet has sufficient native tokens for gas
-- Check current gas prices on target networks
-
-#### 3. RPC Connection Issues
-- Verify RPC URLs are accessible
-- Check for rate limiting on RPC providers
-- Consider using multiple RPC endpoints
-
-#### 4. Container Startup Failures
-```bash
-# Check Docker logs
-docker logs <container_id>
-
-# Verify Docker image availability
-docker pull gcr.io/abacus-labs-dev/hyperlane-agent:agents-v1.4.0
-```
-
-### Debug Mode
-
-Run with MCP Inspector for detailed debugging:
-
-```bash
-pnpm inspect
-```
-
-### Log Files
-
-Check logs in the cache directory:
-```bash
-# Validator logs
-tail -f ~/.hyperlane-mcp/logs/validator-{chain}.log
-
-# Relayer logs  
-tail -f ~/.hyperlane-mcp/logs/relayer.log
-```
+-----
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome\! If you'd like to improve the server or add new tools, please feel free to submit a pull request.
 
-### Development Setup
+-----
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+## License
 
-### Code Style
-
-- Use TypeScript for all new code
-- Follow existing code formatting (Prettier)
-- Add JSDoc comments for public APIs
-- Include error handling
-
-## Authors
-
-- [Suryansh](https://github.com/Suryansh-23)
-- [Ruddy](https://github.com/Ansh1902396)
+This project is licensed under the MIT License.
