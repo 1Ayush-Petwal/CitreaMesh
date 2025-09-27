@@ -16,7 +16,7 @@ import express from "express";
 const app = express();
 app.use(express.json());
 const require = createRequire(import.meta.url);
-const erc20Token = require("../out/erc20Token.sol/erc20Token.json");
+const erc20Token = require("./contracts/erc/erc20Token.sol/erc20Token.json");
 // Load environment variables from .env file
 config();
 // Create server instance
