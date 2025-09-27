@@ -491,6 +491,166 @@ function getServer() {
             };
         }
     });
+    // Async function for token transfer with gas estimation
+    async function executeTokenTransferWithGasEstimation(symbol, recipient, amount) {
+        try {
+            // Find the token (same logic as original transfer-token)
+            let token;
+            const targetSymbol = symbol.toLowerCase();
+            // 1. mostUsedTokens.json
+            const mostUsedFile = path.join(process.cwd(), "mostUsedTokens.json");
+            if (fs.existsSync(mostUsedFile)) {
+                const mostUsed = JSON.parse(fs.readFileSync(mostUsedFile, "utf-8"));
+                token = mostUsed.find((t) => t.symbol && t.symbol.toLowerCase() === targetSymbol);
+            }
+            // 2. deployed-tokens.json
+            if (!token) {
+                const deployedFile = path.join(mcpDir, "deployed-tokens.json");
+                if (fs.existsSync(deployedFile)) {
+                    const deployed = JSON.parse(fs.readFileSync(deployedFile, "utf-8"));
+                    token = deployed.find((t) => t.symbol && t.symbol.toLowerCase() === targetSymbol.toLowerCase());
+                }
+            }
+            if (!token) {
+                throw new Error(`Token with symbol ${symbol} not found in mostUsedTokens.json or deployed-tokens.json.`);
+            }
+            // Set up provider - try Alchemy first, fallback to Citrea RPC
+            const ALCHEMY_RPC = "https://citrea-testnet.g.alchemy.com/v2/jeTbHyricxOeE9tK55txS";
+            let provider;
+            let usingAlchemy = true;
+            try {
+                provider = new ethers.providers.JsonRpcProvider(ALCHEMY_RPC);
+                await provider.getBlockNumber(); // Test connection
+            }
+            catch (e) {
+                console.warn("Alchemy API unavailable, falling back to Citrea RPC");
+                provider = new ethers.providers.JsonRpcProvider(CITREA_RPC);
+                usingAlchemy = false;
+            }
+            const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+            const ERC20_ABI = [
+                "function transfer(address to, uint256 amount) public returns (bool)",
+                "function decimals() view returns (uint8)",
+            ];
+            const contract = new ethers.Contract(token.address, ERC20_ABI, signer);
+            const decimals = await contract.decimals();
+            const amt = ethers.utils.parseUnits(amount, decimals);
+            // EIP-1559 Gas estimation
+            const gasLimit = await contract.estimateGas.transfer(recipient, amt);
+            // Get EIP-1559 fee data
+            const feeData = await provider.getFeeData();
+            const baseFee = feeData.lastBaseFeePerGas || ethers.BigNumber.from("20000000000"); // 20 gwei fallback
+            const maxPriorityFeePerGas = feeData.maxPriorityFeePerGas || ethers.BigNumber.from("2000000000"); // 2 gwei fallback
+            const maxFeePerGas = feeData.maxFeePerGas || baseFee.add(maxPriorityFeePerGas);
+            // Calculate total fee: Gas Limit × (Base Fee + Priority Fee)
+            const estimatedTotalFee = gasLimit.mul(baseFee.add(maxPriorityFeePerGas));
+            const maxTotalFee = gasLimit.mul(maxFeePerGas);
+            // Format values for display
+            const baseFeeGwei = ethers.utils.formatUnits(baseFee, "gwei");
+            const priorityFeeGwei = ethers.utils.formatUnits(maxPriorityFeePerGas, "gwei");
+            const maxFeeGwei = ethers.utils.formatUnits(maxFeePerGas, "gwei");
+            const estimatedCostEth = ethers.utils.formatEther(estimatedTotalFee);
+            const maxCostEth = ethers.utils.formatEther(maxTotalFee);
+            const gasEstimation = {
+                gasLimit: gasLimit.toString(),
+                baseFeePerGas: baseFeeGwei,
+                maxPriorityFeePerGas: priorityFeeGwei,
+                maxFeePerGas: maxFeeGwei,
+                estimatedCost: estimatedCostEth,
+                maxCost: maxCostEth,
+                network: usingAlchemy ? 'Alchemy' : 'Citrea RPC'
+            };
+            // Execute the transfer
+            const result = await transferToken(mcpDir, symbol, recipient, amount, process.env.PRIVATE_KEY, CITREA_RPC, EXPLORER_BASE);
+            console.log("Gas Estimation ... Report:: ", gasEstimation);
+            return {
+                success: true,
+                gasEstimation,
+                transferResult: result,
+                token: {
+                    name: token.name,
+                    symbol: token.symbol,
+                    address: token.address
+                }
+            };
+        }
+        catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : String(err)
+            };
+        }
+    }
+    // Simple async function for basic token transfer
+    async function executeBasicTokenTransfer(symbol, recipient, amount) {
+        try {
+            const result = await transferToken(mcpDir, symbol, recipient, amount, process.env.PRIVATE_KEY, CITREA_RPC, EXPLORER_BASE);
+            return {
+                success: true,
+                result
+            };
+        }
+        catch (err) {
+            return {
+                success: false,
+                error: err instanceof Error ? err.message : String(err)
+            };
+        }
+    }
+    server.tool("transfer-token-with-gas-estimation", "Transfer ERC20 tokens with detailed EIP-1559 gas estimation. Queries JSON-RPC endpoint for baseFee and maxPriorityFeePerGas, then calculates total fee.", {
+        symbol: z.string().describe("Token symbol, e.g. 'mCTR'"),
+        recipient: z
+            .string()
+            .length(42)
+            .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid EVM address")
+            .describe("Recipient address"),
+        amount: z.string().describe("Amount to transfer (human-readable units)"),
+    }, async ({ symbol, recipient, amount }) => {
+        const result = await executeTokenTransferWithGasEstimation(symbol, recipient, amount);
+        if (result.success) {
+            const gasInfo = result.gasEstimation;
+            const transferInfo = result.transferResult;
+            const tokenInfo = result.token;
+            const response = `⛽ **EIP-1559 Gas Estimation & Transfer**\n\n` +
+                `📊 **Transaction Details:**\n` +
+                `   • Token: ${amount} ${tokenInfo.symbol} (${tokenInfo.name})\n` +
+                `   • From: ${process.env.PRIVATE_KEY ? new ethers.Wallet(process.env.PRIVATE_KEY).address : 'N/A'}\n` +
+                `   • To: ${recipient}\n` +
+                `   • Contract: ${tokenInfo.address}\n\n` +
+                `💰 **EIP-1559 Gas Breakdown:**\n` +
+                `   • Gas Limit: ${gasInfo.gasLimit} units\n` +
+                `   • Base Fee: ${gasInfo.baseFeePerGas} gwei\n` +
+                `   • Priority Fee: ${gasInfo.maxPriorityFeePerGas} gwei\n` +
+                `   • Max Fee Per Gas: ${gasInfo.maxFeePerGas} gwei\n\n` +
+                `💸 **Fee Calculation (Gas Limit × (Base Fee + Priority Fee)):**\n` +
+                `   • Estimated Cost: ${gasInfo.estimatedCost} cBTC\n` +
+                `   • Maximum Cost: ${gasInfo.maxCost} cBTC\n\n` +
+                `🔗 **Network:** Citrea Testnet (via ${gasInfo.network})\n\n` +
+                `✅ **Transfer Results:**\n` +
+                `   • Amount: ${amount} ${transferInfo.symbol}\n` +
+                `   • Recipient: ${transferInfo.recipient}\n` +
+                `   • Transaction: ${transferInfo.explorer.transaction}\n` +
+                `   • Contract: ${transferInfo.explorer.contract}`;
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: response,
+                    },
+                ],
+            };
+        }
+        else {
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `❌ Error in gas estimation and transfer: ${result.error}`,
+                    },
+                ],
+            };
+        }
+    });
     server.tool("transfer-token", "Transfer a deployed ERC20 token (from deployed-tokens.json) on Citrea", {
         symbol: z.string().describe("Token symbol, e.g. 'mCTR'"),
         recipient: z
@@ -500,25 +660,26 @@ function getServer() {
             .describe("Recipient address"),
         amount: z.string().describe("Amount to transfer (human-readable units)"),
     }, async ({ symbol, recipient, amount }) => {
-        try {
-            const result = await transferToken(mcpDir, symbol, recipient, amount, process.env.PRIVATE_KEY, CITREA_RPC, EXPLORER_BASE);
+        const result = await executeBasicTokenTransfer(symbol, recipient, amount);
+        if (result.success) {
+            const transferInfo = result.result;
             return {
                 content: [
                     {
                         type: "text",
-                        text: `✅ Transferred ${amount} ${result.symbol} to ${result.recipient}\n` +
-                            `🔗 Tx: ${result.explorer.transaction}\n` +
-                            `📜 Contract: ${result.explorer.contract}`,
+                        text: `✅ Transferred ${amount} ${transferInfo.symbol} to ${transferInfo.recipient}\n` +
+                            `🔗 Tx: ${transferInfo.explorer.transaction}\n` +
+                            `📜 Contract: ${transferInfo.explorer.contract}`,
                     },
                 ],
             };
         }
-        catch (err) {
+        else {
             return {
                 content: [
                     {
                         type: "text",
-                        text: `❌ Error transferring token: ${err instanceof Error ? err.message : String(err)}`,
+                        text: `❌ Error transferring token: ${result.error}`,
                     },
                 ],
             };
