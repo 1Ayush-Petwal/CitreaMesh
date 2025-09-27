@@ -58,7 +58,7 @@ const EXPLORER_BASE = "https://explorer.testnet.citrea.xyz";
 const homeDir = process.env.CACHE_DIR || process.env.HOME;
 let mcpDir;
 if (homeDir) {
-  mcpDir = path.join(homeDir, ".hyperlane-mcp");
+  mcpDir = path.join(homeDir, ".citrea-mcp");
   if (!fs.existsSync(mcpDir)) {
     fs.mkdirSync(mcpDir, { recursive: true });
   }
