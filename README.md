@@ -1,376 +1,269 @@
 # CitreaMesh
 
-A powerful Model Context Protocol (MCP) server enabling seamless integration with the CitreaMesh protocol, allowing LLM assistants to interact with cross-chain messaging and smart contracts across multiple blockchains.
-Making Developer and User experience better and make onboarding easy for them
----
+A Model Context Protocol (MCP) server for seamless interaction with the **Citrea Testnet**. This server empowers LLM assistants to perform on-chain actions, including checking balances, using a testnet faucet, deploying and transferring ERC20 tokens, and analyzing wallet activity.
+
+This project enhances the developer and user experience by abstracting away the complexity of interacting with browsers and wallets, providing a simple interface through a familiar LLM chat application. It aims to help Citrea onboard more developers and users into its ecosystem.
+
+-----
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [How It Works](#how-it-works)
-- [Features](#features)
-- [Requirements](#requirements)
-- [Installation & Setup](#installation--setup)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Available Tools](#available-tools)
-- [Project Structure](#project-structure)
-- [Files & Folders Created](#files--folders-created)
-- [Examples](#examples)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [License](#license)
+  - [Overview](https://www.google.com/search?q=%23overview)
+  - [How It Works](https://www.google.com/search?q=%23how-it-works)
+  - [Features](https://www.google.com/search?q=%23features)
+  - [Requirements](https://www.google.com/search?q=%23requirements)
+  - [Installation & Setup](https://www.google.com/search?q=%23installation--setup)
+  - [Configuration](https://www.google.com/search?q=%23configuration)
+  - [Usage](https://www.google.com/search?q=%23usage)
+  - [Available Tools](https://www.google.com/search?q=%23available-tools)
+  - [Project Structure](https://www.google.com/search?q=%23project-structure)
+  - [Files & Folders Created](https://www.google.com/search?q=%23files--folders-created)
+  - [Examples](https://www.google.com/search?q=%23examples)
+  - [Troubleshooting](https://www.google.com/search?q=%23troubleshooting)
+  - [Contributing](https://www.google.com/search?q=%23contributing)
+  - [License](https://www.google.com/search?q=%23license)
 
----
+-----
 
 ## Overview
 
-The CitreaMesh MCP Server bridges LLM assistants and the CitreaMesh cross-chain infrastructure. It provides a standardized interface for deploying chains, managing validators and relayers, sending cross-chain messages, and deploying asset transfer routes.
+The Citrea MCP Server acts as a bridge between Large Language Models and the Citrea blockchain ecosystem. It exposes a suite of tools that allow an AI assistant to execute blockchain operations based on natural language commands. This simplifies the developer and user experience, making it easier to build, test, and interact with applications on Citrea.
 
----
+-----
 
 ## How It Works
 
-### Architecture
+The server is built using the `@modelcontextprotocol/sdk` and `ethers.js`. It listens for JSON-RPC requests from an MCP client (like a compatible LLM assistant). When a request invokes a registered tool, the server executes the corresponding function—such as calling the Citrea RPC endpoint, managing a local faucet database, or sending a transaction—and returns a formatted, human-readable response.
 
-The server operates as an MCP (Model Context Protocol) server that:
-
-- **Connects to Multiple Blockchains**: Uses CitreaMesh's MultiProvider to manage connections to various blockchain networks.
-- **Manages Local Registry**: Maintains a local cache of chain metadata, deployed contracts, and route configurations.
-- **Deploys Infrastructure**: Handles deployment of CitreaMesh core contracts, validators, and relayers.
-- **Facilitates Cross-Chain Operations**: Enables message passing and asset transfers between chains.
-- **Docker Integration**: Runs validators and relayers in Docker containers for isolation.
-
-#### Core Components
-
-- **LocalRegistry**: Extends CitreaMesh registry system with local storage capabilities
-- **CitreaMeshDeployer**: Handles deployment of core CitreaMesh contracts
-- **ValidatorRunner**: Manages validator Docker containers
-- **RelayerRunner**: Manages relayer Docker containers
-- **RouteManager**: Handles deployment and management of cross-chain asset routes
-
----
+-----
 
 ## Features
 
-- **Cross-Chain Messaging**: Send/monitor messages across blockchain networks
-- **Contract Deployment & Management**: Deploy CitreaMesh core contracts and asset routes
-- **Infrastructure Management**: Run validators, relayers, and monitor their health
-- **Asset Transfers**: Deploy and execute multi-hop asset transfers, supporting various token types
+  * **Wallet Management**: Check native (cBTC) and ERC20 token balances.
+  * **Testnet Faucet**: A built-in faucet to claim testnet cBTC, with eligibility checks, history, and usage stats.
+  * **ERC20 Token Utilities**: Deploy new ERC20 tokens, list previously deployed tokens, and transfer them between addresses.
+  * **Blockchain Explorer**: Generate explorer URLs and fetch detailed, RPC-grounded summaries for wallets and transactions.
 
----
+-----
 
 ## Requirements
 
 ### System
 
-- Node.js: v18 or higher
-- Package Manager: pnpm (recommended)
-- Docker: For validators and relayers
-- OS: Linux, macOS, or Windows with WSL2
-
-### Network
-
-- Access to RPC endpoints for target blockchains
-- Stable internet connection
-- Sufficient bandwidth for Docker image downloads
+  * Node.js: v18 or higher
+  * Package Manager: pnpm (recommended) or npm/yarn
+  * OS: Linux, macOS, or Windows
 
 ### Blockchain
 
-- Private key with sufficient native tokens for gas fees
-- Access to blockchain RPC endpoints
-- Understanding of target chain configurations
+  * A private key with a small amount of testnet cBTC for gas fees on the Citrea Testnet.
 
----
+-----
 
 ## Installation & Setup
 
-1. **Clone the Repository**
+This repository has two primary branches:
+
+  * `main`: Uses a **STDIO transport**, designed for running the server locally.
+  * `HTTPStream`: Uses an **HTTP Streamable transport**, designed for deploying as a web service.
+
+For a deployed service, you can configure your client directly:
+
+```json
+"mcpServers": {
+  "citrea": {
+    "url": "https://citramesh.onrender.com/"
+  }
+}
+```
+
+If you deploy your own backend on a service like Render, remember to provide your `PRIVATE_KEY` and `GITHUB_TOKEN` as environment variables.
+
+### Local Setup Steps
+
+1.  **Clone the Repository**
+
     ```bash
-    git clone https://github.com/Bansalayush247/CitreaMesh.git
-    cd CitreaMesh
+    git clone https://github.com/your-username/citrea-mcp-server.git
+    cd citrea-mcp-server
     ```
 
-2. **Install Dependencies**
+2.  **Install Dependencies**
+
     ```bash
-    # Install pnpm if needed
+    # Install pnpm if you don't have it
     npm install -g pnpm
 
     # Install project dependencies
     pnpm install
     ```
 
-3. **Build the Project**
-    ```bash
-    pnpm build
-    ```
+3.  **Set Up Environment Variables**
+    Create a `.env` file by copying the example:
 
-4. **Set Up Environment Variables**
     ```bash
     cp .env.example .env
-    # Edit `.env` with your configuration:
+    ```
+
+    Now, edit the `.env` file with your details:
+
+    ```env
+    # Your 64-character hex private key (without the '0x' prefix)
     PRIVATE_KEY=your_private_key_here
+
+    # Required: GitHub Personal Access Token for certain functionalities
     GITHUB_TOKEN=your_github_personal_access_token
-    CACHE_DIR=/path/to/custom/cache/directory # optional
+
+    # Optional: Specify a custom directory for caching data (defaults to ~/.citrea-mcp)
+    CACHE_DIR=/path/to/custom/cache/directory
     ```
 
-5. **Verify Docker Installation**
-    ```bash
-    docker --version
-    docker ps
-    ```
-
----
+-----
 
 ## Configuration
 
 ### Environment Variables
 
-| Variable      | Required | Description                                     | Default                |
-|---------------|----------|-------------------------------------------------|------------------------|
-| PRIVATE_KEY   | Yes      | Private key for transaction signing (no 0x)     | None                   |
-| GITHUB_TOKEN  | Yes      | GitHub PAT for accessing registry               | None                   |
-| CACHE_DIR     | No       | Directory for local data                        | ~/.citreamesh-mcp      |
-| HOME          | No       | Home directory (fallback for CACHE_DIR)         | System default         |
+| Variable | Required | Description | Default |
+| :--- | :--- | :--- | :--- |
+| `PRIVATE_KEY` | **Yes** | Private key for signing transactions (deploying tokens, funding faucet claims). | None |
+| `GITHUB_TOKEN` | **Yes** | GitHub Personal Access Token, which may be required for registry access. | None |
+| `CACHE_DIR` | No | Absolute path to a directory for storing local data like faucet history. | `~/.citrea-mcp` |
+| `HOME` | No | Home directory, used as a fallback if `CACHE_DIR` is not set. | System default |
 
 ### MCP Client Configuration
 
-For Claude Desktop or other MCP clients, use:
+To connect this server locally to a client like Claude Desktop, use this configuration:
+
 ```json
 {
   "mcpServers": {
-    "citreamesh": {
+    "citrea": {
       "command": "node",
       "args": [
-        "/path/to/CitreaMesh/build/index.js"
+        "/path/to/your/project/build/index.js"
       ],
       "env": {
-        "PRIVATE_KEY": "your_private_key",
-        "GITHUB_TOKEN": "your_github_token",
-        "CACHE_DIR": "your_cache_dir"
+        "PRIVATE_KEY": "your_private_key_here",
+        "GITHUB_TOKEN": "your_github_personal_access_token"
       }
     }
   }
 }
 ```
 
----
+*Note: You can also add `"CACHE_DIR": "/path/to/custom/cache/directory"` inside the `env` object if needed.*
+
+-----
 
 ## Usage
 
 ### Starting the Server
 
+The server is designed to be run by an MCP client. However, you can run it directly from your terminal for testing if you are on the `HTTPStream` branch.
+
 ```bash
-# Development mode
+# Start the server (it will listen on port 3000 by default)
 pnpm start
-
-# Production mode
-node build/index.js
-
-# With MCP Inspector (for debugging)
-pnpm inspect
 ```
 
-### Basic Workflow
+You can then send POST requests to `http://localhost:3000/mcp` with a valid MCP JSON-RPC payload.
 
-- Deploy a New Chain: Use `deploy-chain` tool to add a blockchain
-- Run Validator: Use `run-validator` to start validation
-- Run Relayer: Use `run-relayer` for message delivery
-- Deploy Asset Route: Use `deploy-route` for asset transfers
-- Send Messages/Assets: Use transfer tools for cross-chain operations
-
----
+-----
 
 ## Available Tools
 
-> **Note:** Please add your actual tool names below as implemented in `/src`.  
-> You can search for files in the `/src` directory ending in `tool.ts` or containing tool logic.
+  * `get_citrea_balance`: Get the native cBTC balance of a specific address.
+  * `deploy-erc20`: Deploys a new ERC20 token contract to the Citrea testnet.
+  * `list-deployed-tokens`: Lists all ERC20 tokens that have been deployed and cached by this server instance.
+  * `transfer-token`: Transfer a specified amount of a deployed ERC20 token to a recipient.
+  * `list-all-token-balances`: Fetches and lists all ERC20 token balances for a given address using the explorer API.
+  * `claim-citrea-faucet`: Request testnet funds from the server's faucet for a given address.
+  * `check-faucet-eligibility`: Check if an address can currently claim from the faucet.
+  * `get-faucet-stats`: View statistics for the faucet, like total claims and remaining balance.
+  * `get-faucet-history`: Retrieve the history of all claims made from the faucet, or filter by a specific address.
+  * `get-citrea-explorer-url`: Generate a Citrea testnet explorer link for an address, transaction, or block.
+  * `get-wallet-explorer-summary`: Provides a comprehensive analysis of a wallet, including balance, transaction count, and recent activity.
+  * `get-transaction-details`: Fetches detailed information for a specific transaction hash.
 
-- `deploy-chain`
-- `run-validator`
-- `run-relayer`
-- `cross-chain-message-transfer`
-- `cross-chain-asset-transfer`
-- `deploy-route`
-- (Add any other implemented tools here…)
-
----
+-----
 
 ## Project Structure
 
 ```
 CitreaMesh/
 ├── src/
-│   ├── index.ts                  # Main MCP server entry point
-│   ├── localRegistry.ts          # Local registry implementation
-│   ├── citreaMeshDeployer.ts     # Core contract deployment
-│   ├── RunValidator.ts           # Validator Docker management
-│   ├── RunRelayer.ts             # Relayer Docker management
-│   ├── routeManager.ts           # Asset route deployment
-│   ├── msgTransfer.ts            # Message transfer logic
-│   ├── assetTransfer.ts          # Asset transfer logic
-│   ├── config.ts                 # Configuration utilities
-│   ├── utils.ts                  # Utility functions
-│   ├── types.ts                  # Type definitions
-│   ├── logger.ts                 # Logging configuration
-│   ├── gcr.ts                    # Container Registry utilities
-│   ├── file.ts                   # File system utilities
-│   ├── configOpts.ts             # Configuration options
-│   └── consts.ts                 # Constants
-├── build/
-├── node_modules/
-├── package.json
-├── tsconfig.json
-├── .env
-└── README.md
+│   ├── contracts/              # Smart contract ABIs and related files
+│   │   ├── erc/                # ERC standard contract definitions
+│   │   └── mostUsedTokens.json # A list of common tokens
+│   ├── utils/                  # General utility functions
+│   │   ├── cacheTokens.ts      # Saves deployed token data locally
+│   │   └── privateKeyToSigner.ts # Creates an ethers.js signer from a key
+│   ├── index.ts                # Main server entry point and tool definitions
+│   ├── tokenTransfer.ts        # Handles the logic for transferring ERC20 tokens
+│   ├── faucet.ts               # Manages and processes claims for the testnet faucet
+│   ├── explorerSummary.ts      # Fetches and formats data from the explorer/RPC
+│   ├── configOpts.ts           # Configuration-related options
+│   └── file.ts                 # File system utilities
+├── .env.example                # Example environment variables file
+├── .gitignore                  # Specifies files for Git to ignore
+├── package.json                # Project dependencies and scripts
+└── README.md                   # This documentation file
 ```
 
----
+-----
 
 ## Files & Folders Created
 
-### Cache Directory Structure
+When you run the server, it may create the following in your home directory (or `CACHE_DIR` if specified):
 
 ```
-~/.citreamesh-mcp/
-├── chains/
-│   ├── {chainName}.yaml
-│   ├── {chainName}.deploy.yaml
-│   └── {chainName}-core-config.yaml
-├── routes/
-│   └── {symbol}-{hash}.yaml
-├── agents/
-│   └── {chainName}-agent-config.json
-└── logs/
-    ├── citreamesh_db_validator_{chain}/
-    ├── citreamesh_db_relayer/
-    └── citreamesh-validator-signatures-{chain}/
+~/.citrea-mcp/
+├── faucet-claims.json      # Stores the history of all faucet claims
+└── deployed-tokens.json    # A cache of ERC20 tokens deployed by the `deploy-erc20` tool
 ```
 
-### File Types Created
-
-- **Chain Configuration Files**
-  - `{chainName}.yaml`: Chain metadata (RPC, chain ID, token info)
-  - `{chainName}.deploy.yaml`: Deployed contract addresses
-  - `{chainName}-core-config.yaml`: Core deployment config
-- **Route Files**
-  - `{symbol}-{hash}.yaml`: Asset route configuration
-- **Agent Configuration Files**
-  - `{chainName}-agent-config.json`: Validator & relayer configs
-- **Docker Volumes**
-  - Validator databases, relayer databases, signature storage
-- **Temporary Files**
-  - Docker containers (managed automatically)
-  - Log files
-
----
+-----
 
 ## Examples
 
-1. **Deploy a New Chain**  
-   Deploy CitreaMesh core contracts to a new blockchain "mytestnet" (chain ID 12345, RPC "https://rpc.mytestnet.com", symbol "MTN", name "MyTestNet Token", marked as testnet).
+1.  **Check cBTC Balance**
 
-2. **Send Cross-Chain Message**  
-   Send a message from Ethereum to Polygon. Recipient: `0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6`, message: "Hello from Ethereum!"
+    > "What is the balance of 0x... on Citrea?"
 
-3. **Deploy Asset Route**  
-   Deploy asset route between Ethereum and Arbitrum. Collateral token for Ethereum, synthetic for Arbitrum.
+2.  **Use the Faucet**
 
-4. **Transfer Assets**  
-   Transfer 100 USDC from Ethereum to Arbitrum to `0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6`. Fetch route config for USDC.
+    > "Claim testnet cBTC from the faucet for my address 0x..."
 
-5. **Run Infrastructure**  
-   Start validator for "mytestnet".  
-   Start relayer for Ethereum and "mytestnet" (validator chain name: "mytestnet").
+3.  **Deploy a New Token**
 
-6. **Multi-Chain Asset Transfer**  
-   Transfer 50 USDC from Ethereum → Polygon → Arbitrum using existing USDC routes. Recipient: `0x742d35Cc6634C0532925a3b8D4C9db96c4b4d8b6`.
+    > "Deploy a new ERC20 token named 'MyCoin' with the symbol 'MYC' and an initial supply of 1,000,000."
 
-7. **Check Route Resources**  
-   Show available route configs for USDC across Ethereum and Polygon.
+4.  **Transfer Tokens**
 
-8. **Deploy Custom Token Route**  
-   Deploy asset route for custom token "MyToken" (symbol: MTK) between Ethereum (collateral), Polygon (synthetic), Arbitrum (synthetic).
+    > "Send 500 MYC to address 0x..."
 
----
+5.  **Analyze a Wallet**
+
+    > "Give me a summary of the wallet activity for 0x..."
+
+-----
 
 ## Troubleshooting
 
-### Common Issues
+  * **"Invalid private key" Error**: Ensure your `PRIVATE_KEY` in the `.env` file is 64 hexadecimal characters long and does not have the `0x` prefix.
+  * **"Insufficient funds" Error**: The wallet associated with your `PRIVATE_KEY` may not have enough cBTC to pay for transaction gas. Use the faucet tool with a different address to send funds to it, or acquire testnet cBTC from another source.
+  * **RPC Errors**: The Citrea testnet RPC might be temporarily down or slow. Check the official Citrea channels for status updates.
+  * **File Permissions**: Ensure the application has permission to read/write to the cache directory (`~/.citrea-mcp` or your custom `CACHE_DIR`).
 
-1. **Docker Permission Errors**
-    ```bash
-    sudo usermod -aG docker $USER
-    # Restart your shell
-    ```
-
-2. **Insufficient Gas Fees**
-   - Ensure wallet has sufficient funds
-   - Check current gas prices
-
-3. **RPC Connection Issues**
-   - Verify RPC URLs
-   - Check for rate limiting
-   - Use multiple endpoints if needed
-
-4. **Container Startup Failures**
-    ```bash
-    docker logs <container_id>
-    docker pull gcr.io/abacus-labs-dev/citreamesh-agent:latest
-    ```
-
-### Debug Mode
-
-Run with MCP Inspector for detailed debugging:
-```bash
-pnpm inspect
-```
-
-### Log Files
-
-Check logs in the cache directory:
-```bash
-tail -f ~/.citreamesh-mcp/logs/validator-{chain}.log
-tail -f ~/.citreamesh-mcp/logs/relayer.log
-```
-
----
+-----
 
 ## Contributing
 
-Contributions are welcome! Please submit a Pull Request.
+Contributions are welcome\! If you'd like to improve the server or add new tools, please feel free to submit a pull request.
 
-### Development Setup
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-### Code Style
-
-- Use TypeScript
-- Follow existing formatting (Prettier)
-- Use JSDoc for APIs
-- Include error handling
-
----
-
-## Authors
-
-- Ayush Bansal
-- Abhinav Chauhan
-- Ayush Petwal
-
----
+-----
 
 ## License
 
 This project is licensed under the MIT License.
-
----
-
-## Disclaimer
-
-The software is provided as is. No guarantee, representation, or warranty is made, express or implied, as to the safety or correctness. It has not been audited and may not work as intended. Users may experience delays, failures, errors, loss of information or funds. The creators are not liable for any of the foregoing. Use at your own risk.
