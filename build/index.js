@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { transferToken } from "./tokenTransfer.js";
 import { config } from "dotenv";
 import { ethers } from "ethers";
@@ -13,17 +14,26 @@ import { CitreaExplorerSummary } from "./explorerSummary.js";
 import { createRequire } from "module";
 import { privateKeyToSigner } from "./utils/privateKeyToSigner.js";
 import express from "express";
+import { randomUUID } from "crypto";
 const app = express();
 app.use(express.json());
 const require = createRequire(import.meta.url);
 const erc20Token = require("../src/contracts/erc/erc20Token.sol/erc20Token.json");
 // Load environment variables from .env file
 config();
+const sessions = {};
 // Create server instance
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`MCP Stateless Streamable HTTP Server listening on PORT ${PORT}`);
 });
+const handleSessionRequest = async (req, res) => {
+    const sessionId = req.headers["mcp-session-id"];
+    if (!sessionId || !sessions[sessionId]) {
+        return res.status(400).send("Invalid or missing session ID");
+    }
+    await sessions[sessionId].transport.handleRequest(req, res);
+};
 function getServer() {
     const server = new McpServer({
         name: "citrea-mcp",
@@ -602,30 +612,49 @@ function getServer() {
     // });
 }
 app.post("/mcp", async (req, res) => {
+    const sessionId = req.headers["mcp-session-id"];
+    let transport;
+    let server;
     try {
-        const server = getServer();
-        const transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: undefined,
-        });
-        res.on("close", () => {
-            console.log("Request Closed");
-            transport.close();
-            server.close();
-        });
-        await server.connect(transport);
+        if (sessionId && sessions[sessionId]) {
+            // Reuse session
+            transport = sessions[sessionId].transport;
+            server = sessions[sessionId].server;
+        }
+        else if (!sessionId && isInitializeRequest(req.body)) {
+            // New session
+            server = getServer();
+            transport = new StreamableHTTPServerTransport({
+                sessionIdGenerator: () => randomUUID(),
+                onsessioninitialized: (sid) => {
+                    sessions[sid] = { transport, server };
+                },
+            });
+            transport.onclose = () => {
+                if (transport.sessionId)
+                    delete sessions[transport.sessionId];
+            };
+            await server.connect(transport);
+        }
+        else {
+            return res.status(400).json({
+                jsonrpc: "2.0",
+                error: { code: -32000, message: "Bad Request: No valid session ID" },
+                id: null,
+            });
+        }
         await transport.handleRequest(req, res, req.body);
     }
-    catch (e) {
-        console.error("Error handling MCP request:", e);
+    catch (err) {
+        console.error("Error handling MCP request:", err);
         if (!res.headersSent) {
             res.status(500).json({
                 jsonrpc: "2.0",
-                error: {
-                    code: -32603,
-                    message: "Internal server error",
-                },
+                error: { code: -32603, message: "Internal server error" },
                 id: null,
             });
         }
     }
 });
+app.get("/mcp", handleSessionRequest); //SSE
+app.delete("/mcp", handleSessionRequest);
