@@ -41,6 +41,9 @@ importers:
       '@openzeppelin/contracts':
         specifier: ^5.4.0
         version: 5.4.0
+      commander:
+        specifier: ^14.0.1
+        version: 14.0.1
       dockerode:
         specifier: ^4.0.6
         version: 4.0.8
