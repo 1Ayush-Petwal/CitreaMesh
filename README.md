@@ -185,6 +185,7 @@ You can then send POST requests to `http://localhost:3000/mcp` with a valid MCP 
   * `get-citrea-explorer-url`: Generate a Citrea testnet explorer link for an address, transaction, or block.
   * `get-wallet-explorer-summary`: Provides a comprehensive analysis of a wallet, including balance, transaction count, and recent activity.
   * `get-transaction-details`: Fetches detailed information for a specific transaction hash.
+  * `deploy-warp-routes`: Deploys the warp-routes smart contracts and on‑chain route configuration to the Citrea testnet.
 
 -----
 
